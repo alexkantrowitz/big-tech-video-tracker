@@ -433,7 +433,13 @@
                 <h2>Email Recipients</h2>
                 <p>Emails will be sent to all addresses listed here.</p>
                 <div id="emailList" class="email-list"></div>
-                <button class="btn btn-primary" onclick="addEmailField()">+ Add Email</button>
+                <div style="display:flex; gap:10px; align-items:center; margin-top:12px; flex-wrap:wrap;">
+                    <button class="btn btn-primary" onclick="addEmailField()">+ Add Email</button>
+                    <button class="btn btn-secondary" onclick="copyShareableLink()" style="background:#e2a631; color:#0f172a; border:none;">📋 Copy Shareable Link</button>
+                </div>
+                <div style="margin-top:12px; padding:12px 16px; background:rgba(226,166,49,0.1); border:1px solid rgba(226,166,49,0.3); border-radius:8px; font-size:0.85rem; color:#94a3b8;">
+                    <strong style="color:#e2a631;">💡 Cross-Browser Tip:</strong> After adding your email recipients, click <strong>"Copy Shareable Link"</strong> and bookmark that URL. Use it to open the tracker on any browser/device — your email settings will be preserved in the link.
+                </div>
             </div>
         </div>
     </div>
@@ -1002,6 +1008,27 @@ document.querySelectorAll('.tab').forEach(tab => {
 document.getElementById('selectAll').addEventListener('change', function() {
     document.querySelectorAll('.row-select').forEach(cb => cb.checked = this.checked);
 });
+
+// ---- Copy Shareable Link ----
+function copyShareableLink() {
+    // First, save current settings to make sure hash is up-to-date
+    saveSettings();
+    const settings = loadSettings();
+    saveSettingsToHash(settings);
+    const url = window.location.href;
+    navigator.clipboard.writeText(url).then(() => {
+        toast('Shareable link copied to clipboard! Bookmark this URL to keep your settings.', 'success');
+    }).catch(() => {
+        // Fallback for older browsers
+        const ta = document.createElement('textarea');
+        ta.value = url;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        toast('Shareable link copied to clipboard! Bookmark this URL to keep your settings.', 'success');
+    });
+}
 
 // ---- Toast ----
 function toast(msg, type = '') {

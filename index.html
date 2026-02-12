@@ -521,10 +521,26 @@ function getActiveMonth() {
     return data.months.find(m => m.id === data.activeMonthId) || data.months[0];
 }
 
+const DEFAULT_SETTINGS = {
+    emails: [''],
+    ejsPublicKey: 'jBbJUBVfCXMatjt7w',
+    ejsServiceId: 'service_uhjvpdb',
+    ejsTemplateId: 'template_204ttnj'
+};
+
 function loadSettings() {
     const raw = localStorage.getItem(SETTINGS_KEY);
-    if (raw) return JSON.parse(raw);
-    return { emails: [''], ejsPublicKey: '', ejsServiceId: '', ejsTemplateId: '' };
+    if (raw) {
+        const saved = JSON.parse(raw);
+        // Ensure defaults are applied if fields are empty
+        return {
+            emails: saved.emails || DEFAULT_SETTINGS.emails,
+            ejsPublicKey: saved.ejsPublicKey || DEFAULT_SETTINGS.ejsPublicKey,
+            ejsServiceId: saved.ejsServiceId || DEFAULT_SETTINGS.ejsServiceId,
+            ejsTemplateId: saved.ejsTemplateId || DEFAULT_SETTINGS.ejsTemplateId
+        };
+    }
+    return { ...DEFAULT_SETTINGS, emails: [''] };
 }
 
 function saveSettingsData(settings) {

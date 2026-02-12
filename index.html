@@ -528,11 +528,46 @@ const DEFAULT_SETTINGS = {
     ejsTemplateId: 'template_204ttnj'
 };
 
+// ---- URL Hash Config (persists settings across browsers) ----
+function loadSettingsFromHash() {
+    try {
+        const hash = window.location.hash;
+        if (hash && hash.startsWith('#config=')) {
+            const encoded = hash.substring(8);
+            const json = decodeURIComponent(atob(encoded));
+            return JSON.parse(json);
+        }
+    } catch (e) { console.warn('Could not parse URL config:', e); }
+    return null;
+}
+
+function saveSettingsToHash(settings) {
+    const json = JSON.stringify({
+        emails: settings.emails,
+        ejsPublicKey: settings.ejsPublicKey,
+        ejsServiceId: settings.ejsServiceId,
+        ejsTemplateId: settings.ejsTemplateId
+    });
+    const encoded = btoa(encodeURIComponent(json));
+    history.replaceState(null, '', '#config=' + encoded);
+}
+
 function loadSettings() {
+    // Priority: 1) URL hash, 2) localStorage, 3) defaults
+    const hashSettings = loadSettingsFromHash();
+    if (hashSettings) {
+        // Save hash settings to localStorage too
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify(hashSettings));
+        return {
+            emails: hashSettings.emails || DEFAULT_SETTINGS.emails,
+            ejsPublicKey: hashSettings.ejsPublicKey || DEFAULT_SETTINGS.ejsPublicKey,
+            ejsServiceId: hashSettings.ejsServiceId || DEFAULT_SETTINGS.ejsServiceId,
+            ejsTemplateId: hashSettings.ejsTemplateId || DEFAULT_SETTINGS.ejsTemplateId
+        };
+    }
     const raw = localStorage.getItem(SETTINGS_KEY);
     if (raw) {
         const saved = JSON.parse(raw);
-        // Ensure defaults are applied if fields are empty
         return {
             emails: saved.emails || DEFAULT_SETTINGS.emails,
             ejsPublicKey: saved.ejsPublicKey || DEFAULT_SETTINGS.ejsPublicKey,
@@ -545,6 +580,7 @@ function loadSettings() {
 
 function saveSettingsData(settings) {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    saveSettingsToHash(settings);
 }
 
 let videos = [];

@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Big Technology Video Tracker</title>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --navy: #1a2332;
+            --navy-light: #243044;
+            --navy-mid: #2c3e56;
+            --slate: #3d5068;
+            --steel: #8899aa;
+            --silver: #b8c5d1;
+            --cloud: #e8ecf1;
+            --white: #f7f8fa;
+            --pure-white: #ffffff;
+            --accent: #c9953c;
+            --accent-light: #e0b05e;
+            --accent-dim: #a07a2e;
+            --blue: #4a90d9;
+            --blue-hover: #3a7bc8;
+            --red: #c0392b;
+            --red-hover: #a5311f;
+            --green: #27ae60;
+            --green-light: #2ecc71;
+            --radius: 8px;
+            --shadow: 0 2px 12px rgba(0,0,0,0.08);
+            --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--white); color: var(--navy); -webkit-font-smoothing: antialiased; }
+
+        /* ---- Header ---- */
+        .header {
+            background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%);
+            color: var(--pure-white);
+            padding: 20px 32px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        }
+        .header-logo {
+            width: 48px; height: 48px; border-radius: 12px; object-fit: cover;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        .header-text h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.3px; }
+        .header-text .subtitle {
+            font-size: 12px; font-weight: 400; color: var(--silver);
+            letter-spacing: 1px; text-transform: uppercase; margin-top: 2px;
+        }
+
+        /* ---- Month Switcher ---- */
+        .month-bar {
+            background: var(--navy-light);
+            padding: 8px 32px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            overflow-x: auto;
+        }
+        .month-pill {
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--silver);
+            background: transparent;
+            border: 1px solid transparent;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s ease;
+            font-family: 'Inter', sans-serif;
+        }
+        .month-pill:hover { color: var(--pure-white); background: rgba(255,255,255,0.08); }
+        .month-pill.active { color: var(--pure-white); background: var(--accent); border-color: var(--accent); }
+        .month-pill.add-month {
+            color: var(--accent-light);
+            border: 1px dashed var(--accent-light);
+            opacity: 0.7;
+        }
+        .month-pill.add-month:hover { opacity: 1; background: rgba(201,149,60,0.1); }
+        .month-delete {
+            margin-left: 6px; font-size: 13px; opacity: 0.5; cursor: pointer;
+        }
+        .month-delete:hover { opacity: 1; color: var(--red); }
+
+        /* ---- Tabs ---- */
+        .tabs {
+            display: flex; background: var(--pure-white);
+            border-bottom: 1px solid var(--cloud); padding: 0 32px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+        }
+        .tab {
+            padding: 14px 28px; cursor: pointer; font-size: 13px; font-weight: 600;
+            color: var(--steel); border-bottom: 2px solid transparent;
+            transition: all 0.25s ease; letter-spacing: 0.3px; text-transform: uppercase;
+        }
+        .tab:hover { color: var(--navy); }
+        .tab.active { color: var(--navy); border-bottom-color: var(--accent); }
+
+        /* ---- Stats Bar ---- */
+        .stats-bar {
+            display: flex; gap: 16px; margin-bottom: 20px; flex-wrap: wrap;
+        }
+        .stat-card {
+            display: flex; align-items: center; gap: 12px;
+            background: var(--pure-white); border: 1px solid var(--cloud);
+            border-radius: var(--radius); padding: 14px 20px; min-width: 150px;
+            box-shadow: var(--shadow);
+        }
+        .stat-icon {
+            width: 40px; height: 40px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px; font-weight: 700;
+        }
+        .stat-icon.longform { background: #e8f0fe; color: #2a6bc5; }
+        .stat-icon.clip { background: #fef5e7; color: #c27a0e; }
+        .stat-icon.short { background: #e8f8ef; color: #1a8a4a; }
+        .stat-icon.total { background: var(--cloud); color: var(--navy); }
+        .stat-info .stat-count { font-size: 24px; font-weight: 700; color: var(--navy); line-height: 1; }
+        .stat-info .stat-label { font-size: 11px; font-weight: 600; color: var(--steel); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+
+        /* ---- Content ---- */
+        .content { padding: 28px 32px; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* ---- Toolbar ---- */
+        .toolbar { display: flex; gap: 10px; margin-bottom: 20px; align-items: center; }
+        .btn {
+            padding: 9px 18px; border: none; border-radius: 6px; cursor: pointer;
+            font-size: 12px; font-weight: 600; font-family: 'Inter', sans-serif;
+            letter-spacing: 0.3px; text-transform: uppercase;
+            transition: all 0.2s ease; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        .btn:active { transform: translateY(1px); }
+        .btn-primary { background: var(--navy); color: var(--pure-white); }
+        .btn-primary:hover { background: var(--navy-light); box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+        .btn-danger { background: var(--red); color: var(--pure-white); }
+        .btn-danger:hover { background: var(--red-hover); }
+        .btn-secondary { background: var(--cloud); color: var(--navy); }
+        .btn-secondary:hover { background: var(--silver); }
+        .btn-email { background: var(--blue); color: var(--pure-white); }
+        .btn-email:hover { background: var(--blue-hover); }
+        .btn-accent { background: var(--accent); color: var(--pure-white); }
+        .btn-accent:hover { background: var(--accent-dim); }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        /* ---- Table ---- */
+        .table-wrap {
+            overflow-x: auto; background: var(--pure-white);
+            border-radius: var(--radius); box-shadow: var(--shadow);
+            border: 1px solid var(--cloud);
+        }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 1500px; }
+        thead { background: var(--navy); }
+        th {
+            padding: 12px 14px; text-align: left; font-weight: 600; font-size: 11px;
+            letter-spacing: 0.6px; text-transform: uppercase; color: var(--silver);
+            white-space: nowrap; position: sticky; top: 0; z-index: 10;
+        }
+        td { padding: 10px 14px; border-bottom: 1px solid var(--cloud); vertical-align: middle; }
+        tr { transition: background 0.15s ease; }
+        tr:hover { background: #f0f3f7; }
+        tr:nth-child(even) { background: #fafbfc; }
+        tr:nth-child(even):hover { background: #f0f3f7; }
+
+        td input[type="text"], td select {
+            width: 100%; border: 1px solid transparent; background: transparent;
+            padding: 5px 8px; font-size: 13px; font-family: 'Inter', sans-serif;
+            border-radius: 5px; transition: all 0.2s ease; color: var(--navy);
+        }
+        td input[type="text"]::placeholder { color: var(--silver); }
+        td input[type="text"]:hover, td select:hover { border-color: var(--cloud); background: var(--white); }
+        td input[type="text"]:focus, td select:focus { border-color: var(--accent); outline: none; background: var(--pure-white); box-shadow: 0 0 0 3px rgba(201,149,60,0.1); }
+        td select { cursor: pointer; }
+        td input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent); }
+        th.col-checkbox, td.col-checkbox { width: 44px; text-align: center; }
+        th.col-email, td.col-email { width: 52px; text-align: center; }
+        .check-col select { width: 68px; }
+
+        /* ---- Color-coded selects ---- */
+        select.select-short { background: #e8f8ef; color: #1a8a4a; font-weight: 600; border: 1px solid #b8e6cc; }
+        select.select-clip { background: #fef5e7; color: #c27a0e; font-weight: 600; border: 1px solid #f5ddb0; }
+        select.select-longform { background: #e8f0fe; color: #2a6bc5; font-weight: 600; border: 1px solid #b8d0f5; }
+        select.select-yes { background: #e8f8ef; color: #1a8a4a; font-weight: 600; border: 1px solid #b8e6cc; }
+        select.select-no { background: #fde8e6; color: #c0392b; font-weight: 600; border: 1px solid #f5b8b3; }
+        select.select-empty { background: transparent; color: var(--steel); font-weight: 400; border: 1px solid transparent; }
+
+        /* ---- Settings Tab ---- */
+        .settings-card {
+            background: var(--pure-white); border-radius: var(--radius);
+            box-shadow: var(--shadow); border: 1px solid var(--cloud);
+            padding: 32px; max-width: 640px;
+        }
+        .settings-card h2 { font-size: 17px; font-weight: 700; margin-bottom: 6px; color: var(--navy); letter-spacing: -0.2px; }
+        .settings-card p { font-size: 13px; color: var(--steel); margin-bottom: 20px; line-height: 1.5; }
+        .settings-section { margin-bottom: 28px; padding-bottom: 28px; border-bottom: 1px solid var(--cloud); }
+        .settings-section:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+
+        .email-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+        .email-row { display: flex; gap: 8px; align-items: center; }
+        .email-row input {
+            flex: 1; padding: 9px 14px; border: 1px solid var(--cloud); border-radius: 6px;
+            font-size: 14px; font-family: 'Inter', sans-serif; color: var(--navy); transition: all 0.2s ease;
+        }
+        .email-row input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px rgba(201,149,60,0.1); }
+        .remove-email {
+            background: none; border: none; color: var(--red); cursor: pointer;
+            font-size: 18px; padding: 4px 8px; border-radius: 4px; transition: background 0.15s;
+        }
+        .remove-email:hover { background: #fde8e6; }
+
+        .field-group { margin-bottom: 16px; }
+        .field-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--navy); }
+        .field-group input {
+            width: 100%; padding: 9px 14px; border: 1px solid var(--cloud); border-radius: 6px;
+            font-size: 14px; font-family: 'Inter', sans-serif; color: var(--navy); transition: all 0.2s ease;
+        }
+        .field-group input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px rgba(201,149,60,0.1); }
+        .hint { font-size: 11px; color: var(--steel); margin-top: 5px; }
+        .hint a { color: var(--blue); text-decoration: none; }
+        .hint a:hover { text-decoration: underline; }
+        .hint code { background: var(--cloud); padding: 1px 5px; border-radius: 3px; font-size: 11px; }
+
+        .status-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; letter-spacing: 0.3px; }
+        .status-ok { background: #e8f8ef; color: var(--green); }
+        .status-err { background: #fde8e6; color: var(--red); }
+        .status-warn { background: #fef5e7; color: var(--accent-dim); }
+
+        /* ---- New Month Form ---- */
+        .new-month-card {
+            background: var(--pure-white); border-radius: var(--radius);
+            box-shadow: var(--shadow); border: 1px solid var(--cloud);
+            padding: 32px; max-width: 480px;
+        }
+        .new-month-card h2 { font-size: 17px; font-weight: 700; margin-bottom: 6px; color: var(--navy); }
+        .new-month-card p { font-size: 13px; color: var(--steel); margin-bottom: 20px; line-height: 1.5; }
+        .month-select-row { display: flex; gap: 12px; margin-bottom: 20px; }
+        .month-select-row select, .month-select-row input {
+            padding: 9px 14px; border: 1px solid var(--cloud); border-radius: 6px;
+            font-size: 14px; font-family: 'Inter', sans-serif; color: var(--navy); flex: 1;
+        }
+        .month-select-row select:focus, .month-select-row input:focus { border-color: var(--accent); outline: none; }
+
+        /* ---- Spinner ---- */
+        .sending { position: relative; pointer-events: none; }
+        .sending::after {
+            content: ''; position: absolute; top: 50%; left: 50%; width: 16px; height: 16px;
+            margin: -8px 0 0 -8px; border: 2px solid var(--accent); border-top-color: transparent;
+            border-radius: 50%; animation: spin 0.6s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ---- Toast ---- */
+        .toast {
+            position: fixed; bottom: 28px; right: 28px; padding: 14px 24px; border-radius: var(--radius);
+            font-size: 13px; font-weight: 500; z-index: 1000; opacity: 0; transition: all 0.3s ease;
+            pointer-events: none; box-shadow: var(--shadow-lg); color: var(--pure-white); backdrop-filter: blur(8px);
+        }
+        .toast.show { opacity: 1; }
+        .toast.error { background: var(--red); }
+        .toast.success { background: var(--navy); border-left: 4px solid var(--accent); }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%234a6fa5'/%3E%3Crect x='15' y='40' width='12' height='30' rx='2' fill='%23e0e0e0'/%3E%3Crect x='30' y='30' width='12' height='40' rx='2' fill='%23f0f0f0'/%3E%3Crect x='45' y='20' width='12' height='50' rx='2' fill='%23e0e0e0'/%3E%3Crect x='60' y='35' width='12' height='35' rx='2' fill='%23f0f0f0'/%3E%3Crect x='75' y='25' width='12' height='45' rx='2' fill='%23e0e0e0'/%3E%3Ccircle cx='50' cy='50' r='42' fill='none' stroke='%23c9953c' stroke-width='2.5' stroke-dasharray='6 4' opacity='.6'/%3E%3Ccircle cx='22' cy='18' r='3' fill='%23c9953c'/%3E%3Ccircle cx='78' cy='15' r='2.5' fill='%23e0b05e'/%3E%3Ccircle cx='85' cy='55' r='2' fill='%23c9953c'/%3E%3C/svg%3E" alt="Big Technology" class="header-logo">
+    <div class="header-text">
+        <h1>Big Technology</h1>
+        <div class="subtitle" id="headerSubtitle">Video Production Tracker</div>
+    </div>
+</div>
+
+<!-- Month Switcher Bar -->
+<div class="month-bar" id="monthBar"></div>
+
+<div class="tabs">
+    <div class="tab active" data-tab="videos">Videos</div>
+    <div class="tab" data-tab="newmonth">New Month</div>
+    <div class="tab" data-tab="settings">Email Settings</div>
+</div>
+
+<div class="content">
+    <!-- Videos Tab -->
+    <div id="videos" class="tab-content active">
+        <div class="stats-bar" id="statsBar"></div>
+        <div class="toolbar">
+            <button class="btn btn-primary" onclick="addRow()">+ Add Video</button>
+            <button class="btn btn-danger" onclick="deleteSelected()">Delete Selected</button>
+            <button class="btn btn-email" onclick="emailSelected()">Email Selected</button>
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="col-checkbox"><input type="checkbox" id="selectAll" title="Select all"></th>
+                        <th>Video Name</th>
+                        <th>Short/Longform</th>
+                        <th>Date Submitted</th>
+                        <th>Post Date</th>
+                        <th>Title</th>
+                        <th>Thumbnails</th>
+                        <th>Description</th>
+                        <th>First Edit</th>
+                        <th>Approved</th>
+                        <th>Posted</th>
+                        <th>Time Code</th>
+                        <th>Source Link</th>
+                        <th>Notes</th>
+                        <th>GDrive Link</th>
+                        <th class="col-email">Email</th>
+                    </tr>
+                </thead>
+                <tbody id="videoTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- New Month Tab -->
+    <div id="newmonth" class="tab-content">
+        <div class="new-month-card">
+            <h2>Create New Month</h2>
+            <p>Start a fresh tracker for a new month. This creates an empty video list you can switch to at any time. Previous months are preserved.</p>
+            <div class="month-select-row">
+                <select id="newMonthSelect">
+                    <option value="January">January</option>
+                    <option value="February">February</option>
+                    <option value="March">March</option>
+                    <option value="April">April</option>
+                    <option value="May">May</option>
+                    <option value="June">June</option>
+                    <option value="July">July</option>
+                    <option value="August">August</option>
+                    <option value="September">September</option>
+                    <option value="October">October</option>
+                    <option value="November">November</option>
+                    <option value="December">December</option>
+                </select>
+                <input type="number" id="newYearInput" value="2026" min="2024" max="2030" style="max-width:100px;">
+            </div>
+            <button class="btn btn-accent" onclick="createNewMonth()">Create Month</button>
+        </div>
+    </div>
+
+    <!-- Email Settings Tab -->
+    <div id="settings" class="tab-content">
+        <div class="settings-card">
+            <div class="settings-section">
+                <h2>EmailJS Configuration</h2>
+                <p>This app uses <a href="https://www.emailjs.com/" target="_blank" style="color:var(--blue)">EmailJS</a> to send emails automatically from the browser. Create a free account, then enter your credentials below.</p>
+                <div class="field-group">
+                    <label>Public Key</label>
+                    <input type="text" id="ejsPublicKey" placeholder="e.g. aBcDeFgHiJkLm">
+                    <div class="hint">Found in EmailJS &rarr; Account &rarr; General &rarr; Public Key</div>
+                </div>
+                <div class="field-group">
+                    <label>Service ID</label>
+                    <input type="text" id="ejsServiceId" placeholder="e.g. service_abc123">
+                    <div class="hint">Found in EmailJS &rarr; Email Services (connect Gmail, Outlook, etc.)</div>
+                </div>
+                <div class="field-group">
+                    <label>Template ID</label>
+                    <input type="text" id="ejsTemplateId" placeholder="e.g. template_xyz789">
+                    <div class="hint">Create a template with these variables: <code>{{to_emails}}</code>, <code>{{subject}}</code>, <code>{{{message}}}</code></div>
+                </div>
+                <div style="margin-top:16px; display:flex; gap:10px; align-items:center;">
+                    <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+                    <button class="btn btn-secondary" onclick="testEmail()">Send Test Email</button>
+                    <span id="emailStatus"></span>
+                </div>
+            </div>
+            <div class="settings-section">
+                <h2>Email Recipients</h2>
+                <p>Emails will be sent to all addresses listed here.</p>
+                <div id="emailList" class="email-list"></div>
+                <button class="btn btn-primary" onclick="addEmailField()">+ Add Email</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ---- Constants ----
+const MONTHS_KEY = 'bigtech_months';      // { months: [{id, label, videos}], activeMonthId }
+const SETTINGS_KEY = 'bigtech_settings';
+const LEGACY_KEY = 'bigtech_videos';
+
+const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+// ---- Data Layer ----
+const DEFAULT_VIDEOS = [
+    { id:1, videoName:'Bret Taylor', type:'Short', dateSubmitted:'', postDate:'2-9', title:'Is AI The Last Invention?', thumbnails:'', description:'', firstEdit:'Yes', approved:'Yes', posted:'Yes', timeCode:'27:20 - 28:51', sourceLink:'', notes:'', gdriveLink:'https://drive.google.com/file/d/1o5fSXUdP5' },
+    { id:2, videoName:'Bret Taylor Clip 01', type:'Clip', dateSubmitted:'', postDate:'', title:'Lessons From', thumbnails:'', description:'', firstEdit:'Yes', approved:'Yes', posted:'Yes', timeCode:'', sourceLink:'', notes:'', gdriveLink:'' },
+    { id:3, videoName:'Ranjan 2-6', type:'Longform', dateSubmitted:'2-6', postDate:'', title:'', thumbnails:'', description:'', firstEdit:'Yes', approved:'Yes', posted:'Yes', timeCode:'', sourceLink:'https://riverside.com/dashboard/studios/ranjan-fridays/projects/69863e3048431', notes:'', gdriveLink:'' },
+    { id:4, videoName:'Karthik Kripapuri', type:'Longform', dateSubmitted:'', postDate:'', title:'CEO, Promevo', thumbnails:'', description:'', firstEdit:'Yes', approved:'Yes', posted:'Yes', timeCode:'', sourceLink:'https://riverside.com/dashboard/studios/promevo-2-4/projects/6982b4ee3ed00c', notes:'', gdriveLink:'' },
+    { id:5, videoName:'Sridhar Ramaswamy', type:'Longform', dateSubmitted:'2-5', postDate:'2-7', title:'CEO, Snowflake', thumbnails:'', description:'', firstEdit:'Yes', approved:'Yes', posted:'Yes', timeCode:'', sourceLink:'https://drive.google.com/drive/folders/1VA5D8WD6AlI6W_Vye4INyO2SoOuvsxr-', notes:'', gdriveLink:'https://drive.google.com/file/d/1_dILA5VB6e' }
+];
+
+function loadMonthsData() {
+    const raw = localStorage.getItem(MONTHS_KEY);
+    if (raw) return JSON.parse(raw);
+
+    // Migrate legacy data
+    const legacyRaw = localStorage.getItem(LEGACY_KEY);
+    const legacyVideos = legacyRaw ? JSON.parse(legacyRaw) : DEFAULT_VIDEOS.map(d => ({...d}));
+
+    const data = {
+        months: [{ id: 'feb-2026', label: 'February 2026', videos: legacyVideos }],
+        activeMonthId: 'feb-2026'
+    };
+    saveMonthsData(data);
+    return data;
+}
+
+function saveMonthsData(data) {
+    localStorage.setItem(MONTHS_KEY, JSON.stringify(data));
+}
+
+function getActiveMonth() {
+    const data = loadMonthsData();
+    return data.months.find(m => m.id === data.activeMonthId) || data.months[0];
+}
+
+function loadSettings() {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    if (raw) return JSON.parse(raw);
+    return { emails: [''], ejsPublicKey: '', ejsServiceId: '', ejsTemplateId: '' };
+}
+
+function saveSettingsData(settings) {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+}
+
+let videos = [];
+let nextId = 1;
+
+function loadActiveVideos() {
+    const month = getActiveMonth();
+    videos = month.videos;
+    nextId = Math.max(...videos.map(v => v.id), 0) + 1;
+}
+
+function saveActiveVideos() {
+    const data = loadMonthsData();
+    const month = data.months.find(m => m.id === data.activeMonthId);
+    if (month) { month.videos = videos; saveMonthsData(data); }
+}
+
+// ---- Month Management ----
+function renderMonthBar() {
+    const data = loadMonthsData();
+    const bar = document.getElementById('monthBar');
+    bar.innerHTML = '';
+
+    data.months.forEach(m => {
+        const pill = document.createElement('button');
+        pill.className = 'month-pill' + (m.id === data.activeMonthId ? ' active' : '');
+        pill.textContent = m.label;
+        pill.onclick = () => switchMonth(m.id);
+
+        // Add delete button for non-active months (only if more than 1 month)
+        if (data.months.length > 1 && m.id !== data.activeMonthId) {
+            const del = document.createElement('span');
+            del.className = 'month-delete';
+            del.textContent = '\u00d7';
+            del.onclick = (e) => { e.stopPropagation(); deleteMonth(m.id); };
+            pill.appendChild(del);
+        }
+
+        bar.appendChild(pill);
+    });
+}
+
+function switchMonth(monthId) {
+    const data = loadMonthsData();
+    data.activeMonthId = monthId;
+    saveMonthsData(data);
+    loadActiveVideos();
+    renderMonthBar();
+    renderTable();
+    updateStats();
+    updateSubtitle();
+}
+
+function createNewMonth() {
+    const monthName = document.getElementById('newMonthSelect').value;
+    const year = document.getElementById('newYearInput').value;
+    const label = `${monthName} ${year}`;
+    const id = `${monthName.toLowerCase()}-${year}`;
+
+    const data = loadMonthsData();
+
+    if (data.months.find(m => m.id === id)) {
+        toast(`${label} already exists. Select it from the month bar.`, 'error');
+        return;
+    }
+
+    data.months.push({ id, label, videos: [] });
+    data.activeMonthId = id;
+    saveMonthsData(data);
+
+    loadActiveVideos();
+    renderMonthBar();
+    renderTable();
+    updateStats();
+    updateSubtitle();
+
+    // Switch to Videos tab
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    document.querySelector('[data-tab="videos"]').classList.add('active');
+    document.getElementById('videos').classList.add('active');
+
+    toast(`${label} created`, 'success');
+}
+
+function deleteMonth(monthId) {
+    const data = loadMonthsData();
+    const month = data.months.find(m => m.id === monthId);
+    if (!month) return;
+    if (!confirm(`Delete "${month.label}" and all its videos? This cannot be undone.`)) return;
+
+    data.months = data.months.filter(m => m.id !== monthId);
+    if (data.activeMonthId === monthId) {
+        data.activeMonthId = data.months[0]?.id || '';
+    }
+    saveMonthsData(data);
+
+    loadActiveVideos();
+    renderMonthBar();
+    renderTable();
+    updateStats();
+    updateSubtitle();
+    toast(`${month.label} deleted`, 'success');
+}
+
+function updateSubtitle() {
+    const month = getActiveMonth();
+    document.getElementById('headerSubtitle').textContent = `Video Production Tracker \u2014 ${month.label}`;
+}
+
+// ---- Stats ----
+function updateStats() {
+    const longforms = videos.filter(v => v.type === 'Longform').length;
+    const clips = videos.filter(v => v.type === 'Clip').length;
+    const shorts = videos.filter(v => v.type === 'Short').length;
+    const total = videos.length;
+
+    document.getElementById('statsBar').innerHTML = `
+        <div class="stat-card">
+            <div class="stat-icon total">#</div>
+            <div class="stat-info"><div class="stat-count">${total}</div><div class="stat-label">Total Videos</div></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon longform">L</div>
+            <div class="stat-info"><div class="stat-count">${longforms}</div><div class="stat-label">Longform</div></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon clip">C</div>
+            <div class="stat-info"><div class="stat-count">${clips}</div><div class="stat-label">Clips</div></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon short">S</div>
+            <div class="stat-info"><div class="stat-count">${shorts}</div><div class="stat-label">Shorts</div></div>
+        </div>
+    `;
+}
+
+// ---- Table Rendering ----
+function renderTable() {
+    const tbody = document.getElementById('videoTableBody');
+    tbody.innerHTML = '';
+    videos.forEach((v) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td class="col-checkbox"><input type="checkbox" class="row-select" data-id="${v.id}"></td>
+            <td><input type="text" value="${esc(v.videoName)}" data-field="videoName" data-id="${v.id}"></td>
+            <td><select data-field="type" data-id="${v.id}">
+                <option value="Short" ${v.type==='Short'?'selected':''}>Short</option>
+                <option value="Longform" ${v.type==='Longform'?'selected':''}>Longform</option>
+                <option value="Clip" ${v.type==='Clip'?'selected':''}>Clip</option>
+            </select></td>
+            <td><input type="text" value="${esc(v.dateSubmitted)}" data-field="dateSubmitted" data-id="${v.id}" placeholder="M-D"></td>
+            <td><input type="text" value="${esc(v.postDate)}" data-field="postDate" data-id="${v.id}" placeholder="M-D"></td>
+            <td><input type="text" value="${esc(v.title)}" data-field="title" data-id="${v.id}"></td>
+            <td><input type="text" value="${esc(v.thumbnails)}" data-field="thumbnails" data-id="${v.id}"></td>
+            <td><input type="text" value="${esc(v.description)}" data-field="description" data-id="${v.id}"></td>
+            <td class="check-col"><select data-field="firstEdit" data-id="${v.id}">
+                <option value="">-</option><option value="Yes" ${v.firstEdit==='Yes'?'selected':''}>Yes</option><option value="No" ${v.firstEdit==='No'?'selected':''}>No</option>
+            </select></td>
+            <td class="check-col"><select data-field="approved" data-id="${v.id}">
+                <option value="">-</option><option value="Yes" ${v.approved==='Yes'?'selected':''}>Yes</option><option value="No" ${v.approved==='No'?'selected':''}>No</option>
+            </select></td>
+            <td class="check-col"><select data-field="posted" data-id="${v.id}">
+                <option value="">-</option><option value="Yes" ${v.posted==='Yes'?'selected':''}>Yes</option><option value="No" ${v.posted==='No'?'selected':''}>No</option>
+            </select></td>
+            <td><input type="text" value="${esc(v.timeCode)}" data-field="timeCode" data-id="${v.id}" placeholder="0:00 - 0:00"></td>
+            <td><input type="text" value="${esc(v.sourceLink)}" data-field="sourceLink" data-id="${v.id}" placeholder="URL"></td>
+            <td><input type="text" value="${esc(v.notes)}" data-field="notes" data-id="${v.id}"></td>
+            <td><input type="text" value="${esc(v.gdriveLink)}" data-field="gdriveLink" data-id="${v.id}" placeholder="URL"></td>
+            <td class="col-email"><input type="checkbox" class="email-check" data-id="${v.id}" title="Send email with this video's details"></td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    applySelectColors(tbody);
+
+    tbody.querySelectorAll('input[data-field], select[data-field]').forEach(el => {
+        el.addEventListener('change', (e) => {
+            handleFieldChange(e);
+            applySelectColor(e.target);
+            updateStats();
+        });
+    });
+
+    tbody.querySelectorAll('.email-check').forEach(el => {
+        el.addEventListener('change', handleEmailCheck);
+    });
+}
+
+function esc(str) {
+    if (!str) return '';
+    return str.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function applySelectColors(container) {
+    container.querySelectorAll('select[data-field]').forEach(applySelectColor);
+}
+
+function applySelectColor(el) {
+    if (!el || el.tagName !== 'SELECT') return;
+    const field = el.dataset.field;
+    const val = el.value;
+    el.className = el.className.replace(/\bselect-\S+/g, '').trim();
+    if (field === 'type') {
+        if (val === 'Short') el.classList.add('select-short');
+        else if (val === 'Clip') el.classList.add('select-clip');
+        else if (val === 'Longform') el.classList.add('select-longform');
+    } else if (field === 'firstEdit' || field === 'approved' || field === 'posted') {
+        if (val === 'Yes') el.classList.add('select-yes');
+        else if (val === 'No') el.classList.add('select-no');
+        else el.classList.add('select-empty');
+    }
+}
+
+function handleFieldChange(e) {
+    const id = parseInt(e.target.dataset.id);
+    const field = e.target.dataset.field;
+    const value = e.target.value;
+    const video = videos.find(v => v.id === id);
+    if (video) { video[field] = value; saveActiveVideos(); }
+}
+
+function handleEmailCheck(e) {
+    const id = parseInt(e.target.dataset.id);
+    const video = videos.find(v => v.id === id);
+    if (!video) return;
+    if (e.target.checked) { sendVideoEmail([video], e.target); }
+}
+
+// ---- Row Management ----
+function addRow() {
+    videos.push({
+        id: nextId++, videoName: '', type: 'Longform', dateSubmitted: '', postDate: '',
+        title: '', thumbnails: '', description: '',
+        firstEdit: '', approved: '', posted: '', timeCode: '',
+        sourceLink: '', notes: '', gdriveLink: ''
+    });
+    saveActiveVideos();
+    renderTable();
+    updateStats();
+    toast('New row added', 'success');
+}
+
+function deleteSelected() {
+    const checked = document.querySelectorAll('.row-select:checked');
+    if (checked.length === 0) { toast('No rows selected', 'error'); return; }
+    if (!confirm(`Delete ${checked.length} selected row(s)?`)) return;
+    const ids = new Set([...checked].map(c => parseInt(c.dataset.id)));
+    videos = videos.filter(v => !ids.has(v.id));
+    saveActiveVideos();
+    renderTable();
+    updateStats();
+    toast(`${ids.size} row(s) deleted`, 'success');
+}
+
+function emailSelected() {
+    const checked = document.querySelectorAll('.row-select:checked');
+    if (checked.length === 0) { toast('No rows selected', 'error'); return; }
+    const ids = new Set([...checked].map(c => parseInt(c.dataset.id)));
+    const selected = videos.filter(v => ids.has(v.id));
+    sendVideoEmail(selected, null);
+}
+
+// ---- Email Sending via EmailJS ----
+function buildEmailHTML(videoList) {
+    let html = '';
+    videoList.forEach((v, i) => {
+        if (videoList.length > 1) {
+            html += `<hr style="border:none;border-top:1px solid #e0e0e0;margin:20px 0;">`;
+            html += `<p style="font-size:14px;color:#888;margin-bottom:12px;">Video ${i+1}</p>`;
+        }
+        html += `<table style="font-family:'Inter',Helvetica,Arial,sans-serif;font-size:14px;color:#1a2332;border-collapse:collapse;width:100%;max-width:600px;">`;
+        const fields = [
+            ['Video Name', v.videoName], ['Type', v.type], ['Date Submitted', v.dateSubmitted],
+            ['Post Date', v.postDate], ['Title', v.title], ['Thumbnails', v.thumbnails],
+            ['Description', v.description], ['First Edit', v.firstEdit], ['Approved', v.approved],
+            ['Posted', v.posted], ['Time Code', v.timeCode], ['Source Link', v.sourceLink],
+            ['Notes', v.notes], ['GDrive Link', v.gdriveLink]
+        ];
+        fields.forEach(([label, value]) => {
+            const isLink = (label === 'Source Link' || label === 'GDrive Link') && value;
+            const valHtml = isLink
+                ? `<a href="${esc(value)}" style="color:#4a90d9;text-decoration:none;">${esc(value)}</a>`
+                : (value ? esc(value) : '<span style="color:#b8c5d1;">\u2014</span>');
+            html += `<tr><td style="padding:6px 12px 6px 0;font-weight:700;white-space:nowrap;vertical-align:top;color:#1a2332;">${label}</td><td style="padding:6px 0;font-weight:400;color:#3d5068;">${valHtml}</td></tr>`;
+        });
+        html += `</table>`;
+    });
+    return html;
+}
+
+async function sendVideoEmail(videoList, checkboxEl) {
+    const settings = loadSettings();
+    const recipients = settings.emails.filter(e => e.trim() !== '');
+    if (!settings.ejsPublicKey || !settings.ejsServiceId || !settings.ejsTemplateId) {
+        toast('EmailJS not configured. Go to Email Settings tab.', 'error');
+        if (checkboxEl) checkboxEl.checked = false; return;
+    }
+    if (recipients.length === 0) {
+        toast('No email recipients configured. Go to Email Settings tab.', 'error');
+        if (checkboxEl) checkboxEl.checked = false; return;
+    }
+    const parentTd = checkboxEl ? checkboxEl.parentElement : null;
+    if (parentTd) parentTd.classList.add('sending');
+    const names = videoList.map(v => v.videoName || 'Untitled').join(', ');
+    const subject = `New Video: ${names}`;
+    const message = buildEmailHTML(videoList);
+    try {
+        emailjs.init(settings.ejsPublicKey);
+        await emailjs.send(settings.ejsServiceId, settings.ejsTemplateId, {
+            to_emails: recipients.join(', '), subject: subject, message: message
+        });
+        toast(`Email sent for: ${names}`, 'success');
+    } catch (err) {
+        console.error('EmailJS error:', err);
+        toast(`Email failed: ${err?.text || err?.message || 'Unknown error'}`, 'error');
+    } finally {
+        if (parentTd) parentTd.classList.remove('sending');
+        if (checkboxEl) setTimeout(() => { checkboxEl.checked = false; }, 500);
+    }
+}
+
+async function testEmail() {
+    saveSettings();
+    const statusEl = document.getElementById('emailStatus');
+    const settings = loadSettings();
+    if (!settings.ejsPublicKey || !settings.ejsServiceId || !settings.ejsTemplateId) {
+        statusEl.innerHTML = '<span class="status-badge status-err">Missing EmailJS credentials</span>'; return;
+    }
+    const recipients = settings.emails.filter(e => e.trim() !== '');
+    if (recipients.length === 0) { statusEl.innerHTML = '<span class="status-badge status-err">No recipients</span>'; return; }
+    statusEl.innerHTML = '<span class="status-badge status-warn">Sending test...</span>';
+    try {
+        emailjs.init(settings.ejsPublicKey);
+        await emailjs.send(settings.ejsServiceId, settings.ejsTemplateId, {
+            to_emails: recipients.join(', '), subject: 'New Video: Test Video',
+            message: '<p style="font-family:Inter,Helvetica,Arial,sans-serif;font-size:14px;color:#1a2332;">This is a test email from <strong>Big Technology Video Tracker</strong>.</p><p style="font-family:Inter,Helvetica,Arial,sans-serif;font-size:14px;color:#3d5068;">If you received this, your email configuration is working correctly.</p>'
+        });
+        statusEl.innerHTML = '<span class="status-badge status-ok">Test email sent!</span>';
+    } catch (err) {
+        console.error('Test email error:', err);
+        statusEl.innerHTML = `<span class="status-badge status-err">Failed: ${err?.text || err?.message || 'Unknown error'}</span>`;
+    }
+}
+
+// ---- Email Settings ----
+function renderSettings() {
+    const settings = loadSettings();
+    const container = document.getElementById('emailList');
+    container.innerHTML = '';
+    settings.emails.forEach((email, i) => {
+        const row = document.createElement('div');
+        row.className = 'email-row';
+        row.innerHTML = `
+            <input type="email" value="${esc(email)}" placeholder="name@example.com" data-idx="${i}" class="email-input">
+            <button class="remove-email" onclick="removeEmail(${i})" title="Remove">&times;</button>
+        `;
+        container.appendChild(row);
+    });
+    container.querySelectorAll('.email-input').forEach(el => {
+        el.addEventListener('input', () => {
+            const s = loadSettings();
+            s.emails[parseInt(el.dataset.idx)] = el.value;
+            saveSettingsData(s);
+        });
+    });
+    const pkField = document.getElementById('ejsPublicKey');
+    const siField = document.getElementById('ejsServiceId');
+    const tiField = document.getElementById('ejsTemplateId');
+    pkField.value = settings.ejsPublicKey || '';
+    siField.value = settings.ejsServiceId || '';
+    tiField.value = settings.ejsTemplateId || '';
+    [pkField, siField, tiField].forEach(field => {
+        field.addEventListener('input', () => {
+            const s = loadSettings();
+            s.ejsPublicKey = pkField.value.trim();
+            s.ejsServiceId = siField.value.trim();
+            s.ejsTemplateId = tiField.value.trim();
+            saveSettingsData(s);
+        });
+    });
+}
+
+function addEmailField() {
+    const settings = loadSettings();
+    settings.emails.push('');
+    saveSettingsData(settings);
+    renderSettings();
+}
+
+function removeEmail(idx) {
+    const settings = loadSettings();
+    settings.emails.splice(idx, 1);
+    if (settings.emails.length === 0) settings.emails.push('');
+    saveSettingsData(settings);
+    renderSettings();
+}
+
+function saveSettings() {
+    const settings = loadSettings();
+    settings.ejsPublicKey = document.getElementById('ejsPublicKey').value.trim();
+    settings.ejsServiceId = document.getElementById('ejsServiceId').value.trim();
+    settings.ejsTemplateId = document.getElementById('ejsTemplateId').value.trim();
+    saveSettingsData(settings);
+    toast('Settings saved', 'success');
+}
+
+// ---- Tabs ----
+document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(tab.dataset.tab).classList.add('active');
+    });
+});
+
+document.getElementById('selectAll').addEventListener('change', function() {
+    document.querySelectorAll('.row-select').forEach(cb => cb.checked = this.checked);
+});
+
+// ---- Toast ----
+function toast(msg, type = '') {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = 'toast show ' + type;
+    setTimeout(() => el.className = 'toast', 3000);
+}
+
+// ---- Init ----
+loadActiveVideos();
+renderMonthBar();
+renderTable();
+updateStats();
+updateSubtitle();
+renderSettings();
+</script>
+</body>
+</html>

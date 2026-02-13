@@ -124,6 +124,7 @@
         .stat-icon.clip { background: #fef5e7; color: #c27a0e; }
         .stat-icon.short { background: #e8f8ef; color: #1a8a4a; }
         .stat-icon.total { background: var(--cloud); color: var(--navy); }
+        .stat-icon.thumb { background: #f3e8ff; color: #7c3aed; }
         .stat-info .stat-count { font-size: 24px; font-weight: 700; color: var(--navy); line-height: 1; }
         .stat-info .stat-label { font-size: 11px; font-weight: 600; color: var(--steel); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
 
@@ -349,6 +350,7 @@
                         <th>Post Date</th>
                         <th>Title</th>
                         <th>Thumbnails</th>
+                        <th>Thumb Made</th>
                         <th>Description</th>
                         <th>First Edit</th>
                         <th>Approved</th>
@@ -670,6 +672,7 @@ function updateStats() {
     const longforms = videos.filter(v => v.type === 'Longform').length;
     const clips = videos.filter(v => v.type === 'Clip').length;
     const shorts = videos.filter(v => v.type === 'Short').length;
+    const thumbsDone = videos.filter(v => v.thumbnailMade).length;
     const total = videos.length;
 
     document.getElementById('statsBar').innerHTML = `
@@ -688,6 +691,10 @@ function updateStats() {
         <div class="stat-card">
             <div class="stat-icon short">S</div>
             <div class="stat-info"><div class="stat-count">${shorts}</div><div class="stat-label">Shorts</div></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon thumb">🖼</div>
+            <div class="stat-info"><div class="stat-count">${thumbsDone}/${total}</div><div class="stat-label">Thumbnails</div></div>
         </div>
     `;
 }
@@ -710,6 +717,7 @@ function renderTable() {
             <td><input type="text" value="${esc(v.postDate)}" data-field="postDate" data-id="${v.id}" placeholder="M-D"></td>
             <td><input type="text" value="${esc(v.title)}" data-field="title" data-id="${v.id}"></td>
             <td><input type="text" value="${esc(v.thumbnails)}" data-field="thumbnails" data-id="${v.id}"></td>
+            <td class="check-col"><input type="checkbox" class="thumb-check" data-field="thumbnailMade" data-id="${v.id}" ${v.thumbnailMade ? 'checked' : ''}></td>
             <td><input type="text" value="${esc(v.description)}" data-field="description" data-id="${v.id}"></td>
             <td class="check-col"><select data-field="firstEdit" data-id="${v.id}">
                 <option value="">-</option><option value="Yes" ${v.firstEdit==='Yes'?'selected':''}>Yes</option><option value="No" ${v.firstEdit==='No'?'selected':''}>No</option>
@@ -772,7 +780,7 @@ function applySelectColor(el) {
 function handleFieldChange(e) {
     const id = parseInt(e.target.dataset.id);
     const field = e.target.dataset.field;
-    const value = e.target.value;
+    const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
     const video = videos.find(v => v.id === id);
     if (video) { video[field] = value; saveActiveVideos(); }
 }
@@ -788,7 +796,7 @@ function handleEmailCheck(e) {
 function addRow() {
     videos.push({
         id: nextId++, videoName: '', type: 'Longform', dateSubmitted: '', postDate: '',
-        title: '', thumbnails: '', description: '',
+        title: '', thumbnails: '', thumbnailMade: false, description: '',
         firstEdit: '', approved: '', posted: '', timeCode: '',
         sourceLink: '', notes: '', gdriveLink: ''
     });
@@ -829,7 +837,7 @@ function buildEmailHTML(videoList) {
         html += `<table style="font-family:'Inter',Helvetica,Arial,sans-serif;font-size:14px;color:#1a2332;border-collapse:collapse;width:100%;max-width:600px;">`;
         const fields = [
             ['Video Name', v.videoName], ['Type', v.type], ['Date Submitted', v.dateSubmitted],
-            ['Post Date', v.postDate], ['Title', v.title], ['Thumbnails', v.thumbnails],
+            ['Post Date', v.postDate], ['Title', v.title], ['Thumbnails', v.thumbnails], ['Thumbnail Made', v.thumbnailMade ? 'Yes' : 'No'],
             ['Description', v.description], ['First Edit', v.firstEdit], ['Approved', v.approved],
             ['Posted', v.posted], ['Time Code', v.timeCode], ['Source Link', v.sourceLink],
             ['Notes', v.notes], ['GDrive Link', v.gdriveLink]

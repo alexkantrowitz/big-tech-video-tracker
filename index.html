@@ -1107,12 +1107,14 @@ async function fetchYouTubeStats() {
             document.getElementById('ytViewCount').textContent = formatNumber(stats.viewCount);
             document.getElementById('ytUpdated').textContent = 'Updated just now';
 
-            // 100K Subscriber Trajectory
+            // 100K Subscriber Trajectory — based on recent growth, not all-time
+            // Known data point from YouTube Studio: ~17,000 subs in Feb 2025
             const subs = parseInt(stats.subscriberCount);
-            const created = new Date(snippet.publishedAt);
             const now = new Date();
-            const monthsActive = (now - created) / (1000 * 60 * 60 * 24 * 30.44);
-            const subsPerMonth = subs / monthsActive;
+            const anchor = { date: new Date('2025-02-01'), subs: 17000 };
+            const monthsSinceAnchor = (now - anchor.date) / (1000 * 60 * 60 * 24 * 30.44);
+            const recentGrowth = subs - anchor.subs;
+            const subsPerMonth = monthsSinceAnchor > 0 ? recentGrowth / monthsSinceAnchor : 0;
             const subsNeeded = 100000 - subs;
             const trajEl = document.getElementById('ytTrajectory');
 

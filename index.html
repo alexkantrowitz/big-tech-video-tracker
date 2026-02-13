@@ -287,6 +287,14 @@
         }
         .dash-mini-number { font-size: 22px; font-weight: 700; color: var(--navy); }
         .dash-mini-label { font-size: 11px; font-weight: 600; color: var(--steel); text-transform: uppercase; letter-spacing: 0.3px; margin-top: 4px; }
+        .dash-yt-trajectory {
+            margin-top: 16px; padding: 16px; text-align: center;
+            background: linear-gradient(135deg, #fef5e7 0%, #fff8ee 100%);
+            border: 1px solid rgba(226,166,49,0.25); border-radius: 8px;
+        }
+        .dash-traj-label { font-size: 11px; font-weight: 600; color: var(--accent-dim); text-transform: uppercase; letter-spacing: 0.5px; }
+        .dash-traj-date { font-size: 22px; font-weight: 700; color: var(--navy); margin-top: 4px; }
+        .dash-traj-sub { font-size: 11px; color: var(--steel); margin-top: 4px; }
         .dash-yt-updated { font-size: 11px; color: var(--steel); margin-top: 14px; text-align: center; }
         .dash-alltime-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .dash-alltime-item {
@@ -452,6 +460,7 @@
                         </div>
                     </div>
                 </div>
+                <div class="dash-yt-trajectory" id="ytTrajectory"></div>
                 <div class="dash-yt-updated" id="ytUpdated"></div>
             </div>
             <div class="dash-card dash-alltime">
@@ -1088,14 +1097,41 @@ function formatNumber(n) {
 
 async function fetchYouTubeStats() {
     try {
-        const res = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=statistics&id=${YT_CHANNEL_ID}&key=${YT_API_KEY}`);
+        const res = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${YT_CHANNEL_ID}&key=${YT_API_KEY}`);
         const data = await res.json();
         if (data.items && data.items[0]) {
             const stats = data.items[0].statistics;
+            const snippet = data.items[0].snippet;
             document.getElementById('ytSubCount').textContent = formatNumber(stats.subscriberCount);
             document.getElementById('ytVideoCount').textContent = formatNumber(stats.videoCount);
             document.getElementById('ytViewCount').textContent = formatNumber(stats.viewCount);
             document.getElementById('ytUpdated').textContent = 'Updated just now';
+
+            // 100K Subscriber Trajectory
+            const subs = parseInt(stats.subscriberCount);
+            const created = new Date(snippet.publishedAt);
+            const now = new Date();
+            const monthsActive = (now - created) / (1000 * 60 * 60 * 24 * 30.44);
+            const subsPerMonth = subs / monthsActive;
+            const subsNeeded = 100000 - subs;
+            const trajEl = document.getElementById('ytTrajectory');
+
+            if (subs >= 100000) {
+                trajEl.innerHTML = `
+                    <div class="dash-traj-label">🎉 100,000 Subscriber Trajectory</div>
+                    <div class="dash-traj-date">Already reached!</div>
+                `;
+            } else if (subsPerMonth > 0) {
+                const monthsToGo = subsNeeded / subsPerMonth;
+                const targetDate = new Date(now.getTime() + monthsToGo * 30.44 * 24 * 60 * 60 * 1000);
+                const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+                const dateStr = monthNames[targetDate.getMonth()] + ' ' + targetDate.getFullYear();
+                trajEl.innerHTML = `
+                    <div class="dash-traj-label">🎯 100,000 Subscriber Trajectory</div>
+                    <div class="dash-traj-date">${dateStr}</div>
+                    <div class="dash-traj-sub">Growing ~${formatNumber(Math.round(subsPerMonth))}/mo · ${formatNumber(subsNeeded)} to go</div>
+                `;
+            }
         }
     } catch (e) {
         document.getElementById('ytUpdated').textContent = 'Could not load YouTube data';

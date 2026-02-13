@@ -160,14 +160,25 @@
             border-radius: var(--radius); box-shadow: var(--shadow);
             border: 1px solid var(--cloud);
         }
-        table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 1500px; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 1500px; table-layout: fixed; }
         thead { background: var(--navy); }
         th {
             padding: 12px 14px; text-align: left; font-weight: 600; font-size: 11px;
             letter-spacing: 0.6px; text-transform: uppercase; color: var(--silver);
             white-space: nowrap; position: sticky; top: 0; z-index: 10;
+            overflow: hidden;
         }
-        td { padding: 10px 14px; border-bottom: 1px solid var(--cloud); vertical-align: middle; }
+        /* Column resize handles */
+        .col-resize-handle {
+            position: absolute; right: 0; top: 0; bottom: 0; width: 5px;
+            cursor: col-resize; z-index: 11;
+        }
+        .col-resize-handle:hover, .col-resize-handle.active {
+            background: var(--accent);
+        }
+        body.col-resizing { cursor: col-resize !important; user-select: none; }
+        body.col-resizing * { cursor: col-resize !important; }
+        td { padding: 10px 14px; border-bottom: 1px solid var(--cloud); vertical-align: middle; overflow: hidden; }
         tr { transition: background 0.15s ease; }
         tr:hover { background: #f0f3f7; }
         tr:nth-child(even) { background: #fafbfc; }
@@ -931,6 +942,9 @@ function renderTable() {
     tbody.querySelectorAll('.email-check').forEach(el => {
         el.addEventListener('change', handleEmailCheck);
     });
+
+    // Re-apply column widths after re-render
+    if (typeof initColumnResize === 'function') initColumnResize();
 }
 
 function esc(str) {
@@ -1296,6 +1310,61 @@ function toast(msg, type = '') {
     el.textContent = msg;
     el.className = 'toast show ' + type;
     setTimeout(() => el.className = 'toast', 3000);
+}
+
+// ---- Column Resize ----
+const COL_WIDTHS_KEY = 'bigtech_col_widths';
+const DEFAULT_COL_WIDTHS = [44, 140, 110, 100, 80, 140, 110, 80, 140, 75, 75, 70, 110, 130, 140, 130, 52];
+
+function initColumnResize() {
+    const ths = document.querySelectorAll('table thead th');
+    if (!ths.length) return;
+
+    // Restore saved widths or use defaults
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem(COL_WIDTHS_KEY)); } catch(e) {}
+    const widths = saved && saved.length === ths.length ? saved : [...DEFAULT_COL_WIDTHS];
+
+    ths.forEach((th, i) => {
+        th.style.width = widths[i] + 'px';
+        th.style.position = 'sticky'; // keep sticky
+
+        // Remove old handles if re-initializing
+        const old = th.querySelector('.col-resize-handle');
+        if (old) old.remove();
+
+        // Don't add handle to last column
+        if (i === ths.length - 1) return;
+
+        const handle = document.createElement('div');
+        handle.className = 'col-resize-handle';
+        th.style.position = 'sticky';
+        th.appendChild(handle);
+
+        handle.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            const startX = e.pageX;
+            const startW = th.offsetWidth;
+            handle.classList.add('active');
+            document.body.classList.add('col-resizing');
+
+            function onMove(e2) {
+                const w = Math.max(40, startW + (e2.pageX - startX));
+                th.style.width = w + 'px';
+            }
+            function onUp() {
+                handle.classList.remove('active');
+                document.body.classList.remove('col-resizing');
+                document.removeEventListener('mousemove', onMove);
+                document.removeEventListener('mouseup', onUp);
+                // Save all widths
+                const allW = Array.from(ths).map(t => t.offsetWidth);
+                localStorage.setItem(COL_WIDTHS_KEY, JSON.stringify(allW));
+            }
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onUp);
+        });
+    });
 }
 
 // ---- Init ----

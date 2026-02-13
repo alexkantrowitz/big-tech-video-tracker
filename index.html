@@ -249,6 +249,66 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
+        /* ---- Dashboard ---- */
+        .dash-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .dash-card {
+            background: var(--pure-white);
+            border: 1px solid var(--cloud);
+            border-radius: var(--radius);
+            padding: 24px;
+            box-shadow: var(--shadow);
+        }
+        .dash-card-header {
+            display: flex; align-items: center; gap: 10px; margin-bottom: 20px;
+            padding-bottom: 14px; border-bottom: 1px solid var(--cloud);
+        }
+        .dash-card-header h3 { font-size: 16px; font-weight: 700; color: var(--navy); }
+        .dash-card-icon {
+            width: 36px; height: 36px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px;
+        }
+        .dash-yt .dash-card-icon { background: #fee2e2; color: #dc2626; }
+        .dash-alltime .dash-card-icon { background: #e8f0fe; color: #2a6bc5; }
+        .dash-monthly-breakdown .dash-card-icon { background: #fef5e7; color: #c27a0e; }
+        .dash-monthly-breakdown { grid-column: 1 / -1; }
+        .dash-yt-stats { display: flex; flex-direction: column; gap: 16px; }
+        .dash-big-stat { text-align: center; padding: 12px 0; }
+        .dash-big-number { font-size: 42px; font-weight: 700; color: var(--navy); line-height: 1; }
+        .dash-big-label { font-size: 12px; font-weight: 600; color: var(--steel); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 6px; }
+        .dash-yt-row { display: flex; gap: 16px; }
+        .dash-mini-stat {
+            flex: 1; text-align: center; padding: 14px;
+            background: var(--white); border-radius: 8px; border: 1px solid var(--cloud);
+        }
+        .dash-mini-number { font-size: 22px; font-weight: 700; color: var(--navy); }
+        .dash-mini-label { font-size: 11px; font-weight: 600; color: var(--steel); text-transform: uppercase; letter-spacing: 0.3px; margin-top: 4px; }
+        .dash-yt-updated { font-size: 11px; color: var(--steel); margin-top: 14px; text-align: center; }
+        .dash-alltime-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .dash-alltime-item {
+            text-align: center; padding: 16px;
+            background: var(--white); border-radius: 8px; border: 1px solid var(--cloud);
+        }
+        .dash-alltime-num { font-size: 28px; font-weight: 700; color: var(--navy); }
+        .dash-alltime-lbl { font-size: 11px; font-weight: 600; color: var(--steel); text-transform: uppercase; letter-spacing: 0.3px; margin-top: 4px; }
+        .dash-months-table { width: 100%; }
+        .dash-months-table table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .dash-months-table th {
+            text-align: left; font-weight: 600; font-size: 11px; text-transform: uppercase;
+            letter-spacing: 0.5px; color: var(--steel); padding: 10px 12px;
+            border-bottom: 2px solid var(--cloud);
+        }
+        .dash-months-table td { padding: 10px 12px; border-bottom: 1px solid var(--cloud); color: var(--navy); }
+        .dash-months-table tr:last-child td { border-bottom: none; font-weight: 700; background: var(--white); }
+        @media (max-width: 768px) {
+            .dash-grid { grid-template-columns: 1fr; }
+            .dash-monthly-breakdown { grid-column: 1; }
+        }
+
         /* ---- Toast ---- */
         .toast {
             position: fixed; bottom: 28px; right: 28px; padding: 14px 24px; border-radius: var(--radius);
@@ -326,6 +386,7 @@
 
 <div class="tabs">
     <div class="tab active" data-tab="videos">Videos</div>
+    <div class="tab" data-tab="dashboard">Dashboard</div>
     <div class="tab" data-tab="newmonth">New Month</div>
     <div class="tab" data-tab="settings">Email Settings</div>
 </div>
@@ -364,6 +425,49 @@
                 </thead>
                 <tbody id="videoTableBody"></tbody>
             </table>
+        </div>
+    </div>
+
+    <!-- Dashboard Tab -->
+    <div id="dashboard" class="tab-content">
+        <div class="dash-grid">
+            <div class="dash-card dash-yt">
+                <div class="dash-card-header">
+                    <span class="dash-card-icon">▶</span>
+                    <h3>YouTube</h3>
+                </div>
+                <div class="dash-yt-stats">
+                    <div class="dash-big-stat">
+                        <div class="dash-big-number" id="ytSubCount">—</div>
+                        <div class="dash-big-label">Subscribers</div>
+                    </div>
+                    <div class="dash-yt-row">
+                        <div class="dash-mini-stat">
+                            <div class="dash-mini-number" id="ytVideoCount">—</div>
+                            <div class="dash-mini-label">Total Videos</div>
+                        </div>
+                        <div class="dash-mini-stat">
+                            <div class="dash-mini-number" id="ytViewCount">—</div>
+                            <div class="dash-mini-label">Total Views</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="dash-yt-updated" id="ytUpdated"></div>
+            </div>
+            <div class="dash-card dash-alltime">
+                <div class="dash-card-header">
+                    <span class="dash-card-icon">📊</span>
+                    <h3>All-Time Production</h3>
+                </div>
+                <div class="dash-alltime-grid" id="dashAlltimeStats"></div>
+            </div>
+            <div class="dash-card dash-monthly-breakdown">
+                <div class="dash-card-header">
+                    <span class="dash-card-icon">📅</span>
+                    <h3>Monthly Breakdown</h3>
+                </div>
+                <div class="dash-months-table" id="dashMonthsTable"></div>
+            </div>
         </div>
     </div>
 
@@ -962,12 +1066,102 @@ document.querySelectorAll('.tab').forEach(tab => {
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
         tab.classList.add('active');
         document.getElementById(tab.dataset.tab).classList.add('active');
+        if (tab.dataset.tab === 'dashboard') renderDashboard();
     });
 });
 
 document.getElementById('selectAll').addEventListener('change', function() {
     document.querySelectorAll('.row-select').forEach(cb => cb.checked = this.checked);
 });
+
+// ---- Dashboard ----
+const YT_CHANNEL_ID = 'UCye1YedIypHffYb8k6Gp9wg';
+const YT_API_KEY = 'AIzaSyDHSKE85zh7z_YZ-crCya2YMrFF0SlmIlA';
+
+function formatNumber(n) {
+    if (!n) return '—';
+    const num = parseInt(n);
+    if (num >= 1000000) return (num / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+    if (num >= 1000) return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+    return num.toLocaleString();
+}
+
+async function fetchYouTubeStats() {
+    try {
+        const res = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=statistics&id=${YT_CHANNEL_ID}&key=${YT_API_KEY}`);
+        const data = await res.json();
+        if (data.items && data.items[0]) {
+            const stats = data.items[0].statistics;
+            document.getElementById('ytSubCount').textContent = formatNumber(stats.subscriberCount);
+            document.getElementById('ytVideoCount').textContent = formatNumber(stats.videoCount);
+            document.getElementById('ytViewCount').textContent = formatNumber(stats.viewCount);
+            document.getElementById('ytUpdated').textContent = 'Updated just now';
+        }
+    } catch (e) {
+        document.getElementById('ytUpdated').textContent = 'Could not load YouTube data';
+    }
+}
+
+function renderDashboard() {
+    const data = loadMonthsData();
+    const allMonths = data.months;
+
+    // All-time totals
+    let totalVideos = 0, totalLongform = 0, totalClips = 0, totalShorts = 0, totalThumbs = 0;
+    allMonths.forEach(m => {
+        m.videos.forEach(v => {
+            totalVideos++;
+            if (v.type === 'Longform') totalLongform++;
+            else if (v.type === 'Clip') totalClips++;
+            else if (v.type === 'Short') totalShorts++;
+            if (v.thumbnailMade) totalThumbs++;
+        });
+    });
+
+    document.getElementById('dashAlltimeStats').innerHTML = `
+        <div class="dash-alltime-item"><div class="dash-alltime-num">${totalVideos}</div><div class="dash-alltime-lbl">Total Videos</div></div>
+        <div class="dash-alltime-item"><div class="dash-alltime-num">${totalLongform}</div><div class="dash-alltime-lbl">Longform</div></div>
+        <div class="dash-alltime-item"><div class="dash-alltime-num">${totalClips}</div><div class="dash-alltime-lbl">Clips</div></div>
+        <div class="dash-alltime-item"><div class="dash-alltime-num">${totalShorts}</div><div class="dash-alltime-lbl">Shorts</div></div>
+        <div class="dash-alltime-item"><div class="dash-alltime-num">${totalThumbs}</div><div class="dash-alltime-lbl">Thumbnails Made</div></div>
+        <div class="dash-alltime-item"><div class="dash-alltime-num">${allMonths.length}</div><div class="dash-alltime-lbl">Months Tracked</div></div>
+    `;
+
+    // Monthly breakdown table
+    let rows = '';
+    allMonths.forEach(m => {
+        const lf = m.videos.filter(v => v.type === 'Longform').length;
+        const cl = m.videos.filter(v => v.type === 'Clip').length;
+        const sh = m.videos.filter(v => v.type === 'Short').length;
+        const th = m.videos.filter(v => v.thumbnailMade).length;
+        rows += `<tr>
+            <td>${m.label}</td>
+            <td>${m.videos.length}</td>
+            <td>${lf}</td>
+            <td>${cl}</td>
+            <td>${sh}</td>
+            <td>${th}</td>
+        </tr>`;
+    });
+    // Totals row
+    rows += `<tr>
+        <td>All Time</td>
+        <td>${totalVideos}</td>
+        <td>${totalLongform}</td>
+        <td>${totalClips}</td>
+        <td>${totalShorts}</td>
+        <td>${totalThumbs}</td>
+    </tr>`;
+
+    document.getElementById('dashMonthsTable').innerHTML = `
+        <table>
+            <thead><tr><th>Month</th><th>Total</th><th>Longform</th><th>Clips</th><th>Shorts</th><th>Thumbnails</th></tr></thead>
+            <tbody>${rows}</tbody>
+        </table>
+    `;
+
+    fetchYouTubeStats();
+}
 
 // ---- Copy Shareable Link ----
 function copyShareableLink() {

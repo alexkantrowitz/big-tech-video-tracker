@@ -576,25 +576,90 @@ const LEGACY_KEY = 'bigtech_videos';
 
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
+// ---- Cloud Sync (npoint.io) ----
+const NPOINT_URL = 'https://api.npoint.io/aacc4d4f83658845c610';
+
+let cloudSyncEnabled = !!NPOINT_URL;
+let isSyncing = false;
+let syncQueue = null; // holds pending save if one is in-flight
+
+async function fetchFromCloud() {
+    if (!cloudSyncEnabled) return null;
+    try {
+        const res = await fetch(NPOINT_URL);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        // Normalize all videos
+        if (data.months) {
+            data.months.forEach(m => {
+                m.videos = (m.videos || []).map(normalizeVideo);
+            });
+        }
+        return data;
+    } catch (err) {
+        console.warn('Cloud fetch failed, using local cache:', err);
+        return null;
+    }
+}
+
+async function saveToCloud(data) {
+    if (!cloudSyncEnabled) return;
+    // If already syncing, queue this save (latest wins)
+    if (isSyncing) {
+        syncQueue = data;
+        return;
+    }
+    isSyncing = true;
+    try {
+        const res = await fetch(NPOINT_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    } catch (err) {
+        console.warn('Cloud save failed:', err);
+    } finally {
+        isSyncing = false;
+        // Process queued save if any
+        if (syncQueue) {
+            const queued = syncQueue;
+            syncQueue = null;
+            saveToCloud(queued);
+        }
+    }
+}
+
 // ---- Data Layer ----
 const DEFAULT_VIDEOS = [
-    { id:1, videoName:'Bret Taylor', type:'Short', dateSubmitted:'', postDate:'2-9', title:'Is AI The Last Invention?', thumbnails:'', description:'', firstEdit:'Yes', approved:'Yes', posted:'Yes', timeCode:'27:20 - 28:51', sourceLink:'', notes:'', gdriveLink:'https://drive.google.com/file/d/1o5fSXUdP5' },
-    { id:2, videoName:'Bret Taylor Clip 01', type:'Clip', dateSubmitted:'', postDate:'', title:'Lessons From', thumbnails:'', description:'', firstEdit:'Yes', approved:'Yes', posted:'Yes', timeCode:'', sourceLink:'', notes:'', gdriveLink:'' },
-    { id:3, videoName:'Ranjan 2-6', type:'Longform', dateSubmitted:'2-6', postDate:'', title:'', thumbnails:'', description:'', firstEdit:'Yes', approved:'Yes', posted:'Yes', timeCode:'', sourceLink:'https://riverside.com/dashboard/studios/ranjan-fridays/projects/69863e3048431', notes:'', gdriveLink:'' },
-    { id:4, videoName:'Karthik Kripapuri', type:'Longform', dateSubmitted:'', postDate:'', title:'CEO, Promevo', thumbnails:'', description:'', firstEdit:'Yes', approved:'Yes', posted:'Yes', timeCode:'', sourceLink:'https://riverside.com/dashboard/studios/promevo-2-4/projects/6982b4ee3ed00c', notes:'', gdriveLink:'' },
-    { id:5, videoName:'Sridhar Ramaswamy', type:'Longform', dateSubmitted:'2-5', postDate:'2-7', title:'CEO, Snowflake', thumbnails:'', description:'', firstEdit:'Yes', approved:'Yes', posted:'Yes', timeCode:'', sourceLink:'https://drive.google.com/drive/folders/1VA5D8WD6AlI6W_Vye4INyO2SoOuvsxr-', notes:'', gdriveLink:'https://drive.google.com/file/d/1_dILA5VB6e' }
+    { id:1, videoName:'Bret Taylor', type:'Short', dateSubmitted:'', postDate:'2-9', title:'Is AI The Last Invention?', thumbnails:'', thumbnailMade:false, description:'', firstEdit:'Yes', approved:'Yes', posted:'Yes', timeCode:'27:20 - 28:51', sourceLink:'', notes:'', gdriveLink:'https://drive.google.com/file/d/1o5fSXUdP5' },
+    { id:2, videoName:'Bret Taylor Clip 01', type:'Clip', dateSubmitted:'', postDate:'', title:'Lessons From', thumbnails:'', thumbnailMade:false, description:'', firstEdit:'Yes', approved:'Yes', posted:'Yes', timeCode:'', sourceLink:'', notes:'', gdriveLink:'' },
+    { id:3, videoName:'Ranjan 2-6', type:'Longform', dateSubmitted:'2-6', postDate:'', title:'', thumbnails:'', thumbnailMade:false, description:'', firstEdit:'Yes', approved:'Yes', posted:'Yes', timeCode:'', sourceLink:'https://riverside.com/dashboard/studios/ranjan-fridays/projects/69863e3048431', notes:'', gdriveLink:'' },
+    { id:4, videoName:'Karthik Kripapuri', type:'Longform', dateSubmitted:'', postDate:'', title:'CEO, Promevo', thumbnails:'', thumbnailMade:false, description:'', firstEdit:'Yes', approved:'Yes', posted:'Yes', timeCode:'', sourceLink:'https://riverside.com/dashboard/studios/promevo-2-4/projects/6982b4ee3ed00c', notes:'', gdriveLink:'' },
+    { id:5, videoName:'Sridhar Ramaswamy', type:'Longform', dateSubmitted:'2-5', postDate:'2-7', title:'CEO, Snowflake', thumbnails:'', thumbnailMade:false, description:'', firstEdit:'Yes', approved:'Yes', posted:'Yes', timeCode:'', sourceLink:'https://drive.google.com/drive/folders/1VA5D8WD6AlI6W_Vye4INyO2SoOuvsxr-', notes:'', gdriveLink:'https://drive.google.com/file/d/1_dILA5VB6e' }
 ];
+
+function normalizeVideo(v) {
+    return Object.assign({ thumbnailMade: false }, v);
+}
 
 function loadMonthsData() {
     const raw = localStorage.getItem(MONTHS_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+        const data = JSON.parse(raw);
+        data.months.forEach(m => {
+            m.videos = (m.videos || []).map(normalizeVideo);
+        });
+        return data;
+    }
 
     // Migrate legacy data
     const legacyRaw = localStorage.getItem(LEGACY_KEY);
     const legacyVideos = legacyRaw ? JSON.parse(legacyRaw) : DEFAULT_VIDEOS.map(d => ({...d}));
 
     const data = {
-        months: [{ id: 'feb-2026', label: 'February 2026', videos: legacyVideos }],
+        months: [{ id: 'feb-2026', label: 'February 2026', videos: legacyVideos.map(normalizeVideo) }],
         activeMonthId: 'feb-2026'
     };
     saveMonthsData(data);
@@ -602,7 +667,10 @@ function loadMonthsData() {
 }
 
 function saveMonthsData(data) {
+    // Always save to localStorage (fast cache)
     localStorage.setItem(MONTHS_KEY, JSON.stringify(data));
+    // Also push to cloud (async, non-blocking)
+    saveToCloud(data);
 }
 
 function getActiveMonth() {
@@ -1237,6 +1305,29 @@ renderTable();
 updateStats();
 updateSubtitle();
 renderSettings();
+
+// ---- Sync from cloud on load ----
+(async function syncOnLoad() {
+    if (!cloudSyncEnabled) return;
+    const cloudData = await fetchFromCloud();
+    if (cloudData && cloudData.months && cloudData.months.length > 0) {
+        // Cloud has data — use it as the source of truth
+        localStorage.setItem(MONTHS_KEY, JSON.stringify(cloudData));
+        loadActiveVideos();
+        renderMonthBar();
+        renderTable();
+        updateStats();
+        updateSubtitle();
+        toast('Synced from cloud', 'success');
+    } else if (cloudData && cloudData.months && cloudData.months.length === 0) {
+        // Cloud is empty — push local data up to seed it
+        const localData = loadMonthsData();
+        if (localData.months.length > 0) {
+            await saveToCloud(localData);
+            toast('Local data pushed to cloud', 'success');
+        }
+    }
+})();
 </script>
 </body>
 </html>

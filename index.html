@@ -794,8 +794,10 @@ function handleEmailCheck(e) {
 
 // ---- Row Management ----
 function addRow() {
+    const now = new Date();
+    const todayStr = (now.getMonth()+1) + '-' + now.getDate();
     videos.push({
-        id: nextId++, videoName: '', type: 'Longform', dateSubmitted: '', postDate: '',
+        id: nextId++, videoName: '', type: 'Longform', dateSubmitted: todayStr, postDate: '',
         title: '', thumbnails: '', thumbnailMade: false, description: '',
         firstEdit: '', approved: '', posted: '', timeCode: '',
         sourceLink: '', notes: '', gdriveLink: ''

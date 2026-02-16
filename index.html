@@ -679,6 +679,8 @@ function loadMonthsData() {
 }
 
 function saveMonthsData(data) {
+    // Stamp with modification time so sync can compare
+    data.lastModified = Date.now();
     // Always save to localStorage (fast cache)
     localStorage.setItem(MONTHS_KEY, JSON.stringify(data));
     // Also push to cloud (async, non-blocking)
@@ -1428,26 +1430,34 @@ renderSettings();
 (async function syncOnLoad() {
     if (!cloudSyncEnabled) return;
     const cloudData = await fetchFromCloud();
+    const localData = loadMonthsData();
+    const cloudTime = (cloudData && cloudData.lastModified) || 0;
+    const localTime = localData.lastModified || 0;
+
     if (cloudData && cloudData.months && cloudData.months.length > 0) {
-        // Cloud has data — use it as the source of truth
-        localStorage.setItem(MONTHS_KEY, JSON.stringify(cloudData));
-        // Restore settings from cloud if present
-        if (cloudData.settings) {
-            localStorage.setItem(SETTINGS_KEY, JSON.stringify(cloudData.settings));
-            renderSettings();
+        if (localTime > cloudTime && localData.months.length > 0) {
+            // Local is newer — push local to cloud
+            localData.settings = loadSettings();
+            await saveToCloud(localData);
+            toast('Local changes pushed to cloud', 'success');
+        } else {
+            // Cloud is newer (or same) — use cloud as source of truth
+            localStorage.setItem(MONTHS_KEY, JSON.stringify(cloudData));
+            if (cloudData.settings) {
+                localStorage.setItem(SETTINGS_KEY, JSON.stringify(cloudData.settings));
+                renderSettings();
+            }
+            loadActiveVideos();
+            renderMonthBar();
+            renderTable();
+            updateStats();
+            updateSubtitle();
+            toast('Synced from cloud', 'success');
         }
-        loadActiveVideos();
-        renderMonthBar();
-        renderTable();
-        updateStats();
-        updateSubtitle();
-        toast('Synced from cloud', 'success');
-    } else if (cloudData && cloudData.months && cloudData.months.length === 0) {
+    } else if (!cloudData || !cloudData.months || cloudData.months.length === 0) {
         // Cloud is empty — push local data up to seed it
-        const localData = loadMonthsData();
-        // Include current settings in the seed
-        localData.settings = loadSettings();
         if (localData.months.length > 0) {
+            localData.settings = loadSettings();
             await saveToCloud(localData);
             toast('Local data pushed to cloud', 'success');
         }

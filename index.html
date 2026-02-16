@@ -391,6 +391,36 @@
             border-top-color: var(--accent); border-radius: 50%;
             animation: spin 0.8s linear infinite; margin: 0 auto 16px;
         }
+        .vp-insights {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            border-radius: var(--radius); padding: 20px 24px; margin-bottom: 16px;
+            box-shadow: var(--shadow);
+        }
+        .vp-insights-title {
+            font-size: 12px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.8px; color: var(--accent-light); margin-bottom: 12px;
+        }
+        .vp-insights ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+        .vp-insights li {
+            font-size: 13px; color: #e2e8f0; line-height: 1.5;
+            padding-left: 20px; position: relative;
+        }
+        .vp-insights li::before {
+            content: '→'; position: absolute; left: 0; color: var(--accent-light); font-weight: 700;
+        }
+        .vp-pagination {
+            display: flex; align-items: center; justify-content: center;
+            gap: 16px; margin-top: 20px; padding: 12px 0;
+        }
+        .vp-page-btn {
+            width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--cloud);
+            background: var(--pure-white); color: var(--navy); font-size: 18px; font-weight: 700;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s ease; box-shadow: var(--shadow); font-family: 'Inter', sans-serif;
+        }
+        .vp-page-btn:hover:not(:disabled) { background: var(--navy); color: var(--pure-white); }
+        .vp-page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+        .vp-page-info { font-size: 13px; font-weight: 600; color: var(--steel); }
         @media (max-width: 640px) {
             .vp-item { flex-wrap: wrap; }
             .vp-thumb { width: 100%; height: auto; aspect-ratio: 16/9; }
@@ -1616,8 +1646,9 @@ async function fetchVideoPerformance() {
         // Cache the results
         setVpCache(allVideos);
 
-        // Render
-        renderVpList(allVideos);
+        // Render from page 0
+        vpCurrentPage = 0;
+        renderVpList(allVideos, 0);
 
     } catch (err) {
         console.error('[VP] Fetch error:', err);
@@ -1625,8 +1656,71 @@ async function fetchVideoPerformance() {
     }
 }
 
-function renderVpList(videos) {
+const VP_PAGE_SIZE = 15;
+let vpCurrentPage = 0;
+let vpAllVideos = [];
+
+function generateVpInsights(videos) {
+    if (!videos || videos.length < 3) return [];
+    const insights = [];
+
+    const totalViews = videos.reduce((s, v) => s + v.views, 0);
+    const avgViews = totalViews / videos.length;
+
+    // Insight 1: Recent performance trend (last 5 vs overall)
+    const recent = videos.slice(0, Math.min(5, videos.length));
+    const recentAvg = recent.reduce((s, v) => s + v.views, 0) / recent.length;
+    const recentPct = Math.round(((recentAvg - avgViews) / avgViews) * 100);
+    if (recentPct > 10) {
+        insights.push(`Your last ${recent.length} videos are trending ${recentPct}% above your channel average — momentum is building.`);
+    } else if (recentPct < -10) {
+        insights.push(`Your last ${recent.length} videos are trending ${Math.abs(recentPct)}% below your channel average — recent uploads are underperforming.`);
+    } else {
+        insights.push(`Your last ${recent.length} videos are performing right at your channel average — steady and consistent.`);
+    }
+
+    // Insight 2: Best performing topic/video recently
+    const recentTop = [...recent].sort((a, b) => b.views - a.views)[0];
+    if (recentTop) {
+        const multiplier = (recentTop.views / avgViews).toFixed(1);
+        insights.push(`"${recentTop.title.substring(0, 60)}${recentTop.title.length > 60 ? '...' : ''}" is your top recent performer at ${formatNumber(recentTop.views)} views (${multiplier}x average).`);
+    }
+
+    // Insight 3: Duration sweet spot analysis
+    const shortLong = videos.filter(v => v.duration >= 20 && v.duration <= 35);
+    const medLong = videos.filter(v => v.duration > 35 && v.duration <= 60);
+    const extraLong = videos.filter(v => v.duration > 60);
+    const buckets = [
+        { label: '20–35 min', vids: shortLong },
+        { label: '35–60 min', vids: medLong },
+        { label: '60+ min', vids: extraLong }
+    ].filter(b => b.vids.length >= 2);
+
+    if (buckets.length >= 2) {
+        const bucketAvgs = buckets.map(b => ({
+            label: b.label,
+            avg: b.vids.reduce((s, v) => s + v.views, 0) / b.vids.length,
+            count: b.vids.length
+        }));
+        const best = bucketAvgs.sort((a, b) => b.avg - a.avg)[0];
+        insights.push(`Videos in the ${best.label} range perform best, averaging ${formatNumber(Math.round(best.avg))} views across ${best.count} videos.`);
+    } else {
+        // Fallback: green vs red count
+        const aboveThreshold = avgViews * 1.2;
+        const greenCount = videos.filter(v => v.views >= aboveThreshold).length;
+        const greenPct = Math.round((greenCount / videos.length) * 100);
+        insights.push(`${greenCount} of ${videos.length} longform videos (${greenPct}%) are performing above average — ${greenPct >= 30 ? 'a healthy hit rate' : 'room to improve'}.`);
+    }
+
+    return insights;
+}
+
+function renderVpList(videos, page) {
     const container = document.getElementById('vpContainer');
+    vpAllVideos = videos;
+
+    if (page === undefined) page = vpCurrentPage;
+    vpCurrentPage = page;
 
     if (!videos || videos.length === 0) {
         container.innerHTML = '<div class="vp-loading">No videos over 20 minutes found.</div>';
@@ -1645,16 +1739,37 @@ function renderVpList(videos) {
         return 'yellow';
     }
 
-    // Build HTML
+    // Pagination
+    const totalPages = Math.ceil(videos.length / VP_PAGE_SIZE);
+    if (page >= totalPages) page = totalPages - 1;
+    if (page < 0) page = 0;
+    vpCurrentPage = page;
+    const startIdx = page * VP_PAGE_SIZE;
+    const pageVideos = videos.slice(startIdx, startIdx + VP_PAGE_SIZE);
+
+    // Cache age
     const cache = getVpCache();
     const cacheAge = cache ? Math.round((Date.now() - cache.timestamp) / 60000) : 0;
     const updatedText = cacheAge < 1 ? 'Updated just now' : `Updated ${cacheAge} min ago`;
+
+    // Insights
+    const insights = generateVpInsights(videos);
 
     let html = `
         <div class="vp-header">
             <h2>📊 Video Performance (${videos.length} videos over 20 min)</h2>
             <div class="vp-meta">${updatedText} · Refreshes hourly</div>
         </div>
+    `;
+
+    if (insights.length > 0) {
+        html += `<div class="vp-insights">
+            <div class="vp-insights-title">💡 Insights</div>
+            <ul>${insights.map(i => `<li>${i}</li>`).join('')}</ul>
+        </div>`;
+    }
+
+    html += `
         <div class="vp-legend">
             <div class="vp-legend-item"><div class="vp-legend-dot green"></div> Above average</div>
             <div class="vp-legend-item"><div class="vp-legend-dot yellow"></div> About average</div>
@@ -1664,7 +1779,7 @@ function renderVpList(videos) {
         <div class="vp-list">
     `;
 
-    videos.forEach(v => {
+    pageVideos.forEach(v => {
         const color = getColor(v.views);
         const date = new Date(v.publishedAt);
         const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -1682,14 +1797,33 @@ function renderVpList(videos) {
     });
 
     html += '</div>';
+
+    // Pagination nav
+    if (totalPages > 1) {
+        html += `
+            <div class="vp-pagination">
+                <button class="vp-page-btn" onclick="vpGoPage(${page - 1})" ${page === 0 ? 'disabled' : ''}>‹</button>
+                <span class="vp-page-info">Page ${page + 1} of ${totalPages}</span>
+                <button class="vp-page-btn" onclick="vpGoPage(${page + 1})" ${page >= totalPages - 1 ? 'disabled' : ''}>›</button>
+            </div>
+        `;
+    }
+
     container.innerHTML = html;
+}
+
+function vpGoPage(page) {
+    renderVpList(vpAllVideos, page);
+    // Scroll to top of tab content
+    document.getElementById('vpContainer').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function renderVideoPerformance() {
     const cache = getVpCache();
     if (cache && cache.videos) {
-        renderVpList(cache.videos);
+        renderVpList(cache.videos, vpCurrentPage);
     } else {
+        vpCurrentPage = 0;
         fetchVideoPerformance();
     }
 }

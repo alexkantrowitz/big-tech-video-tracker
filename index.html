@@ -898,6 +898,7 @@ function saveSettingsData(settings) {
     // Also sync settings to cloud
     const data = loadMonthsData();
     data.settings = settings;
+    data.lastModified = Date.now();
     localStorage.setItem(MONTHS_KEY, JSON.stringify(data));
     saveToCloud(data);
 }

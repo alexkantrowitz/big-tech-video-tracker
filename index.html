@@ -419,6 +419,7 @@
             <button class="btn btn-danger" onclick="deleteSelected()">Delete Selected</button>
             <button class="btn btn-email" onclick="emailSelected()">Email Selected</button>
             <button class="btn btn-accent" onclick="saveNow()" id="saveBtn">💾 Save</button>
+            <button class="btn btn-secondary" onclick="testCloudSync()" id="testSyncBtn" title="Test if cloud sync is working">🔍 Test Sync</button>
         </div>
         <div class="table-wrap">
             <table>
@@ -598,7 +599,9 @@ let syncQueue = null; // holds pending save if one is in-flight
 async function fetchFromCloud() {
     if (!cloudSyncEnabled) return null;
     try {
-        const res = await fetch(NPOINT_URL);
+        // Cache-bust: add timestamp param to defeat Cloudflare/browser caching
+        const url = NPOINT_URL + '?t=' + Date.now();
+        const res = await fetch(url, { cache: 'no-store' });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         if (data.error) throw new Error(data.error);
@@ -630,6 +633,7 @@ async function saveToCloud(data) {
         console.log('[SYNC] Saving to cloud...', body.length, 'bytes');
         const res = await fetch(NPOINT_URL, {
             method: 'POST',
+            cache: 'no-store',
             headers: { 'Content-Type': 'application/json' },
             body: body
         });
@@ -637,11 +641,14 @@ async function saveToCloud(data) {
             const errText = await res.text();
             throw new Error(`HTTP ${res.status}: ${errText}`);
         }
-        console.log('[SYNC] Cloud save OK');
+        const responseData = await res.json();
+        console.log('[SYNC] Cloud save OK, response:', JSON.stringify(responseData).substring(0, 200));
         updateSyncBadge('saved');
     } catch (err) {
         console.error('[SYNC] Cloud save FAILED:', err);
         updateSyncBadge('error');
+        // Show visible error so user knows sync failed
+        toast('Cloud sync failed: ' + err.message, 'error');
     } finally {
         isSyncing = false;
         // Process queued save if any
@@ -727,15 +734,86 @@ async function saveNow() {
     try {
         const data = loadMonthsData();
         data.settings = loadSettings();
+        data.lastModified = Date.now();
         localStorage.setItem(MONTHS_KEY, JSON.stringify(data));
         await saveToCloud(data);
-        btn.textContent = '✅ Saved!';
-        toast('All data saved to cloud', 'success');
+
+        // Verify the save by reading back
+        const verify = await fetchFromCloud();
+        if (verify && verify.months && verify.months.length > 0) {
+            const cloudVids = verify.months.reduce((s, m) => s + m.videos.length, 0);
+            const localVids = data.months.reduce((s, m) => s + m.videos.length, 0);
+            if (cloudVids === localVids) {
+                btn.textContent = '✅ Verified!';
+                toast('Saved & verified — ' + localVids + ' videos in cloud', 'success');
+            } else {
+                btn.textContent = '⚠️ Mismatch';
+                toast('Saved but cloud has ' + cloudVids + ' videos vs local ' + localVids, 'error');
+            }
+        } else {
+            btn.textContent = '⚠️ Unverified';
+            toast('Save sent but could not verify — cloud returned empty', 'error');
+        }
     } catch (err) {
         btn.textContent = '❌ Error';
         toast('Save failed: ' + err.message, 'error');
     }
-    setTimeout(() => { btn.textContent = '💾 Save'; btn.disabled = false; }, 2000);
+    setTimeout(() => { btn.textContent = '💾 Save'; btn.disabled = false; }, 3000);
+}
+
+async function testCloudSync() {
+    const btn = document.getElementById('testSyncBtn');
+    btn.textContent = '⏳ Testing...'; btn.disabled = true;
+    const results = [];
+    try {
+        // Step 1: Write current data to cloud
+        const data = loadMonthsData();
+        data.settings = loadSettings();
+        data.lastModified = Date.now();
+        const body = JSON.stringify(data);
+        results.push('📤 Sending ' + body.length + ' bytes...');
+
+        const writeRes = await fetch(NPOINT_URL, {
+            method: 'POST',
+            cache: 'no-store',
+            headers: { 'Content-Type': 'application/json' },
+            body: body
+        });
+        results.push('📤 POST response: HTTP ' + writeRes.status);
+        if (!writeRes.ok) {
+            const errText = await writeRes.text();
+            results.push('❌ POST failed: ' + errText);
+            alert('SYNC TEST RESULTS:\n\n' + results.join('\n'));
+            return;
+        }
+        const writeData = await writeRes.json();
+        results.push('📤 POST returned ' + JSON.stringify(writeData).length + ' bytes');
+
+        // Step 2: Read back from cloud
+        const readUrl = NPOINT_URL + '?t=' + Date.now();
+        const readRes = await fetch(readUrl, { cache: 'no-store' });
+        results.push('📥 GET response: HTTP ' + readRes.status);
+        const readData = await readRes.json();
+        const cloudMonths = readData.months ? readData.months.length : 0;
+        const cloudVideos = readData.months && readData.months[0] ? readData.months[0].videos.length : 0;
+        results.push('📥 Cloud has: ' + cloudMonths + ' months, ' + cloudVideos + ' videos');
+        results.push('📥 lastModified: ' + readData.lastModified);
+
+        // Step 3: Compare
+        const localVideos = data.months && data.months[0] ? data.months[0].videos.length : 0;
+        if (cloudVideos === localVideos) {
+            results.push('✅ SYNC WORKING! Cloud matches local (' + localVideos + ' videos)');
+            toast('Cloud sync verified! Data is saving correctly.', 'success');
+        } else {
+            results.push('⚠️ MISMATCH: Local has ' + localVideos + ' videos, cloud has ' + cloudVideos);
+            toast('Sync mismatch detected — see alert', 'error');
+        }
+    } catch (err) {
+        results.push('❌ ERROR: ' + err.message);
+        toast('Sync test failed: ' + err.message, 'error');
+    }
+    alert('SYNC TEST RESULTS:\n\n' + results.join('\n'));
+    btn.textContent = '🔍 Test Sync'; btn.disabled = false;
 }
 
 function getActiveMonth() {
@@ -1462,12 +1540,16 @@ renderSettings();
 // ---- Sync from cloud on load ----
 (async function syncOnLoad() {
     if (!cloudSyncEnabled) return;
-    console.log('[SYNC] Starting sync...');
+    console.log('[SYNC] Starting sync from', NPOINT_URL);
     const cloudData = await fetchFromCloud();
-    console.log('[SYNC] Cloud data:', cloudData ? (cloudData.months?.length + ' months') : 'null');
+    const localData = loadMonthsData();
 
-    if (cloudData && cloudData.months && cloudData.months.length > 0) {
-        // Cloud has data — ALWAYS use it as source of truth on page load
+    const cloudVideos = cloudData?.months?.reduce((s, m) => s + (m.videos?.length || 0), 0) || 0;
+    const localVideos = localData.months.reduce((s, m) => s + m.videos.length, 0);
+    console.log('[SYNC] Cloud:', cloudData?.months?.length || 0, 'months,', cloudVideos, 'videos | Local:', localData.months.length, 'months,', localVideos, 'videos');
+
+    if (cloudData && cloudData.months && cloudData.months.length > 0 && cloudVideos > 0) {
+        // Cloud has real data — use it as source of truth on page load
         console.log('[SYNC] Using cloud data as source of truth');
         localStorage.setItem(MONTHS_KEY, JSON.stringify(cloudData));
         if (cloudData.settings) {
@@ -1479,15 +1561,15 @@ renderSettings();
         renderTable();
         updateStats();
         updateSubtitle();
-        toast('Synced from cloud', 'success');
+        toast('Synced from cloud (' + cloudVideos + ' videos)', 'success');
     } else {
         // Cloud is empty or unreachable — seed it from local
-        console.log('[SYNC] Cloud empty → seeding from local');
-        const localData = loadMonthsData();
-        if (localData.months.length > 0) {
+        console.log('[SYNC] Cloud empty → seeding from local (' + localVideos + ' videos)');
+        if (localVideos > 0) {
             localData.settings = loadSettings();
-            saveMonthsData(localData);
-            toast('Local data pushed to cloud', 'success');
+            localData.lastModified = Date.now();
+            await saveToCloud(localData);
+            toast('Local data pushed to cloud (' + localVideos + ' videos)', 'success');
         }
     }
 })();

@@ -937,6 +937,17 @@ function renderTable() {
             applySelectColor(e.target);
             updateStats();
         });
+        // Also save text fields on every keystroke (debounced)
+        if (el.type === 'text') {
+            let debounceTimer;
+            el.addEventListener('input', (e) => {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => {
+                    handleFieldChange(e);
+                    updateStats();
+                }, 500);
+            });
+        }
     });
 
     tbody.querySelectorAll('.email-check').forEach(el => {

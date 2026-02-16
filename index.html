@@ -1435,13 +1435,8 @@ renderSettings();
     const localTime = localData.lastModified || 0;
 
     if (cloudData && cloudData.months && cloudData.months.length > 0) {
-        if (localTime > cloudTime && localData.months.length > 0) {
-            // Local is newer — push local to cloud
-            localData.settings = loadSettings();
-            await saveToCloud(localData);
-            toast('Local changes pushed to cloud', 'success');
-        } else {
-            // Cloud is newer (or same) — use cloud as source of truth
+        if (cloudTime > localTime) {
+            // Cloud is strictly newer — use cloud as source of truth
             localStorage.setItem(MONTHS_KEY, JSON.stringify(cloudData));
             if (cloudData.settings) {
                 localStorage.setItem(SETTINGS_KEY, JSON.stringify(cloudData.settings));
@@ -1453,12 +1448,17 @@ renderSettings();
             updateStats();
             updateSubtitle();
             toast('Synced from cloud', 'success');
+        } else if (localData.months.length > 0) {
+            // Local is newer or equal — push local to cloud
+            localData.settings = loadSettings();
+            saveMonthsData(localData);
+            toast('Local data synced to cloud', 'success');
         }
     } else if (!cloudData || !cloudData.months || cloudData.months.length === 0) {
         // Cloud is empty — push local data up to seed it
         if (localData.months.length > 0) {
             localData.settings = loadSettings();
-            await saveToCloud(localData);
+            saveMonthsData(localData);
             toast('Local data pushed to cloud', 'success');
         }
     }

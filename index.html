@@ -698,7 +698,8 @@ function loadMonthsData() {
         return data;
     }
 
-    // Migrate legacy data
+    // Migrate legacy data — save to localStorage ONLY (not cloud)
+    // Cloud sync happens later in syncOnLoad to avoid race conditions
     const legacyRaw = localStorage.getItem(LEGACY_KEY);
     const legacyVideos = legacyRaw ? JSON.parse(legacyRaw) : DEFAULT_VIDEOS.map(d => ({...d}));
 
@@ -706,7 +707,7 @@ function loadMonthsData() {
         months: [{ id: 'feb-2026', label: 'February 2026', videos: legacyVideos.map(normalizeVideo) }],
         activeMonthId: 'feb-2026'
     };
-    saveMonthsData(data);
+    localStorage.setItem(MONTHS_KEY, JSON.stringify(data));
     return data;
 }
 
@@ -1461,14 +1462,18 @@ renderSettings();
 // ---- Sync from cloud on load ----
 (async function syncOnLoad() {
     if (!cloudSyncEnabled) return;
+    console.log('[SYNC] Starting sync...');
     const cloudData = await fetchFromCloud();
     const localData = loadMonthsData();
     const cloudTime = (cloudData && cloudData.lastModified) || 0;
     const localTime = localData.lastModified || 0;
+    console.log('[SYNC] cloudTime:', cloudTime, 'localTime:', localTime);
+    console.log('[SYNC] cloud months:', cloudData?.months?.length || 0, 'local months:', localData.months.length);
 
     if (cloudData && cloudData.months && cloudData.months.length > 0) {
         if (cloudTime > localTime) {
             // Cloud is strictly newer — use cloud as source of truth
+            console.log('[SYNC] Cloud is newer → using cloud data');
             localStorage.setItem(MONTHS_KEY, JSON.stringify(cloudData));
             if (cloudData.settings) {
                 localStorage.setItem(SETTINGS_KEY, JSON.stringify(cloudData.settings));
@@ -1480,14 +1485,18 @@ renderSettings();
             updateStats();
             updateSubtitle();
             toast('Synced from cloud', 'success');
-        } else if (localData.months.length > 0) {
-            // Local is newer or equal — push local to cloud
-            localData.settings = loadSettings();
-            saveMonthsData(localData);
-            toast('Local data synced to cloud', 'success');
+        } else {
+            // Local is newer or equal — don't overwrite anything
+            console.log('[SYNC] Local is newer or equal → keeping local, pushing to cloud');
+            if (localData.months.length > 0 && localTime > 0) {
+                localData.settings = loadSettings();
+                saveMonthsData(localData);
+            }
+            toast('Data in sync', 'success');
         }
     } else if (!cloudData || !cloudData.months || cloudData.months.length === 0) {
         // Cloud is empty — push local data up to seed it
+        console.log('[SYNC] Cloud is empty → seeding from local');
         if (localData.months.length > 0) {
             localData.settings = loadSettings();
             saveMonthsData(localData);

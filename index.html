@@ -1464,39 +1464,26 @@ renderSettings();
     if (!cloudSyncEnabled) return;
     console.log('[SYNC] Starting sync...');
     const cloudData = await fetchFromCloud();
-    const localData = loadMonthsData();
-    const cloudTime = (cloudData && cloudData.lastModified) || 0;
-    const localTime = localData.lastModified || 0;
-    console.log('[SYNC] cloudTime:', cloudTime, 'localTime:', localTime);
-    console.log('[SYNC] cloud months:', cloudData?.months?.length || 0, 'local months:', localData.months.length);
+    console.log('[SYNC] Cloud data:', cloudData ? (cloudData.months?.length + ' months') : 'null');
 
     if (cloudData && cloudData.months && cloudData.months.length > 0) {
-        if (cloudTime > localTime) {
-            // Cloud is strictly newer — use cloud as source of truth
-            console.log('[SYNC] Cloud is newer → using cloud data');
-            localStorage.setItem(MONTHS_KEY, JSON.stringify(cloudData));
-            if (cloudData.settings) {
-                localStorage.setItem(SETTINGS_KEY, JSON.stringify(cloudData.settings));
-                renderSettings();
-            }
-            loadActiveVideos();
-            renderMonthBar();
-            renderTable();
-            updateStats();
-            updateSubtitle();
-            toast('Synced from cloud', 'success');
-        } else {
-            // Local is newer or equal — don't overwrite anything
-            console.log('[SYNC] Local is newer or equal → keeping local, pushing to cloud');
-            if (localData.months.length > 0 && localTime > 0) {
-                localData.settings = loadSettings();
-                saveMonthsData(localData);
-            }
-            toast('Data in sync', 'success');
+        // Cloud has data — ALWAYS use it as source of truth on page load
+        console.log('[SYNC] Using cloud data as source of truth');
+        localStorage.setItem(MONTHS_KEY, JSON.stringify(cloudData));
+        if (cloudData.settings) {
+            localStorage.setItem(SETTINGS_KEY, JSON.stringify(cloudData.settings));
+            renderSettings();
         }
-    } else if (!cloudData || !cloudData.months || cloudData.months.length === 0) {
-        // Cloud is empty — push local data up to seed it
-        console.log('[SYNC] Cloud is empty → seeding from local');
+        loadActiveVideos();
+        renderMonthBar();
+        renderTable();
+        updateStats();
+        updateSubtitle();
+        toast('Synced from cloud', 'success');
+    } else {
+        // Cloud is empty or unreachable — seed it from local
+        console.log('[SYNC] Cloud empty → seeding from local');
+        const localData = loadMonthsData();
         if (localData.months.length > 0) {
             localData.settings = loadSettings();
             saveMonthsData(localData);

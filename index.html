@@ -328,6 +328,74 @@
             .dash-monthly-breakdown { grid-column: 1; }
         }
 
+        /* ---- Video Performance ---- */
+        .vp-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 20px; flex-wrap: wrap; gap: 12px;
+        }
+        .vp-header h2 { font-size: 18px; font-weight: 700; color: var(--navy); }
+        .vp-meta { font-size: 12px; color: var(--steel); }
+        .vp-legend {
+            display: flex; gap: 16px; align-items: center;
+            padding: 12px 20px; background: var(--pure-white); border: 1px solid var(--cloud);
+            border-radius: var(--radius); margin-bottom: 16px; box-shadow: var(--shadow);
+        }
+        .vp-legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--navy); }
+        .vp-legend-dot { width: 12px; height: 12px; border-radius: 3px; }
+        .vp-legend-dot.green { background: #22c55e; }
+        .vp-legend-dot.yellow { background: #eab308; }
+        .vp-legend-dot.red { background: #ef4444; }
+        .vp-avg-bar {
+            padding: 10px 20px; background: linear-gradient(135deg, #f0f3f7, #e8ecf1);
+            border-radius: var(--radius); margin-bottom: 16px; font-size: 13px;
+            font-weight: 600; color: var(--navy); text-align: center;
+        }
+        .vp-list {
+            display: flex; flex-direction: column; gap: 8px;
+        }
+        .vp-item {
+            display: flex; align-items: center; gap: 14px;
+            background: var(--pure-white); border: 1px solid var(--cloud);
+            border-radius: var(--radius); padding: 12px 16px;
+            box-shadow: var(--shadow); border-left: 4px solid var(--cloud);
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .vp-item:hover { transform: translateY(-1px); box-shadow: var(--shadow-lg); }
+        .vp-item.green { border-left-color: #22c55e; }
+        .vp-item.yellow { border-left-color: #eab308; }
+        .vp-item.red { border-left-color: #ef4444; }
+        .vp-thumb {
+            width: 120px; height: 68px; border-radius: 6px; object-fit: cover;
+            flex-shrink: 0; background: var(--cloud);
+        }
+        .vp-info { flex: 1; min-width: 0; }
+        .vp-title {
+            font-size: 14px; font-weight: 600; color: var(--navy);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .vp-date { font-size: 11px; color: var(--steel); margin-top: 2px; }
+        .vp-duration { font-size: 11px; color: var(--steel); }
+        .vp-views {
+            font-size: 14px; font-weight: 700; padding: 6px 14px;
+            border-radius: 20px; white-space: nowrap; flex-shrink: 0;
+        }
+        .vp-views.green { background: #dcfce7; color: #15803d; }
+        .vp-views.yellow { background: #fef9c3; color: #a16207; }
+        .vp-views.red { background: #fee2e2; color: #b91c1c; }
+        .vp-loading {
+            text-align: center; padding: 60px 20px; color: var(--steel);
+            font-size: 14px; font-weight: 500;
+        }
+        .vp-loading .spinner {
+            width: 32px; height: 32px; border: 3px solid var(--cloud);
+            border-top-color: var(--accent); border-radius: 50%;
+            animation: spin 0.8s linear infinite; margin: 0 auto 16px;
+        }
+        @media (max-width: 640px) {
+            .vp-item { flex-wrap: wrap; }
+            .vp-thumb { width: 100%; height: auto; aspect-ratio: 16/9; }
+        }
+
         /* ---- Toast ---- */
         .toast {
             position: fixed; bottom: 28px; right: 28px; padding: 14px 24px; border-radius: var(--radius);
@@ -406,6 +474,7 @@
 <div class="tabs">
     <div class="tab active" data-tab="videos">Videos</div>
     <div class="tab" data-tab="dashboard">Dashboard</div>
+    <div class="tab" data-tab="videoperf">Video Performance</div>
     <div class="tab" data-tab="newmonth">New Month</div>
     <div class="tab" data-tab="settings">Email Settings</div>
 </div>
@@ -489,6 +558,16 @@
                     <h3>Monthly Breakdown</h3>
                 </div>
                 <div class="dash-months-table" id="dashMonthsTable"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Video Performance Tab -->
+    <div id="videoperf" class="tab-content">
+        <div id="vpContainer">
+            <div class="vp-loading" id="vpLoading">
+                <div class="spinner"></div>
+                Loading video performance data...
             </div>
         </div>
     </div>
@@ -1321,6 +1400,7 @@ document.querySelectorAll('.tab').forEach(tab => {
         tab.classList.add('active');
         document.getElementById(tab.dataset.tab).classList.add('active');
         if (tab.dataset.tab === 'dashboard') renderDashboard();
+        if (tab.dataset.tab === 'videoperf') renderVideoPerformance();
     });
 });
 
@@ -1445,6 +1525,183 @@ function renderDashboard() {
 
     fetchYouTubeStats();
 }
+
+// ---- Video Performance ----
+const VP_CACHE_KEY = 'bigtech_vp_cache';
+const VP_CACHE_TTL = 3600000; // 1 hour in ms
+
+function parseDuration(iso) {
+    // Parse ISO 8601 duration like PT1H25M30S → total minutes
+    if (!iso) return 0;
+    const m = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+    if (!m) return 0;
+    return (parseInt(m[1] || 0) * 60) + parseInt(m[2] || 0) + (parseInt(m[3] || 0) / 60);
+}
+
+function formatDuration(mins) {
+    const h = Math.floor(mins / 60);
+    const m = Math.round(mins % 60);
+    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+
+function getVpCache() {
+    try {
+        const raw = localStorage.getItem(VP_CACHE_KEY);
+        if (!raw) return null;
+        const cache = JSON.parse(raw);
+        if (Date.now() - cache.timestamp > VP_CACHE_TTL) return null; // stale
+        return cache;
+    } catch (e) { return null; }
+}
+
+function setVpCache(videos) {
+    localStorage.setItem(VP_CACHE_KEY, JSON.stringify({ timestamp: Date.now(), videos }));
+}
+
+async function fetchVideoPerformance() {
+    const container = document.getElementById('vpContainer');
+    container.innerHTML = '<div class="vp-loading"><div class="spinner"></div>Fetching video data from YouTube...</div>';
+
+    try {
+        // Step 1: Get all video IDs from the uploads playlist
+        const uploadsPlaylistId = YT_CHANNEL_ID.replace('UC', 'UU');
+        let allVideoIds = [];
+        let pageToken = '';
+
+        do {
+            const url = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${uploadsPlaylistId}&maxResults=50&key=${YT_API_KEY}` + (pageToken ? `&pageToken=${pageToken}` : '');
+            const res = await fetch(url);
+            if (!res.ok) throw new Error(`PlaylistItems API error: HTTP ${res.status}`);
+            const data = await res.json();
+            if (data.error) throw new Error(data.error.message);
+
+            data.items.forEach(item => {
+                allVideoIds.push(item.snippet.resourceId.videoId);
+            });
+            pageToken = data.nextPageToken || '';
+        } while (pageToken);
+
+        console.log(`[VP] Found ${allVideoIds.length} total videos in uploads playlist`);
+
+        // Step 2: Fetch video details in batches of 50
+        let allVideos = [];
+        for (let i = 0; i < allVideoIds.length; i += 50) {
+            const batch = allVideoIds.slice(i, i + 50);
+            const url = `https://www.googleapis.com/youtube/v3/videos?part=contentDetails,statistics,snippet&id=${batch.join(',')}&key=${YT_API_KEY}`;
+            const res = await fetch(url);
+            if (!res.ok) throw new Error(`Videos API error: HTTP ${res.status}`);
+            const data = await res.json();
+            if (data.error) throw new Error(data.error.message);
+
+            data.items.forEach(v => {
+                const durationMins = parseDuration(v.contentDetails.duration);
+                if (durationMins >= 20) {
+                    allVideos.push({
+                        id: v.id,
+                        title: v.snippet.title,
+                        publishedAt: v.snippet.publishedAt,
+                        thumbnail: v.snippet.thumbnails?.medium?.url || v.snippet.thumbnails?.default?.url || '',
+                        duration: durationMins,
+                        views: parseInt(v.statistics.viewCount || '0')
+                    });
+                }
+            });
+        }
+
+        console.log(`[VP] ${allVideos.length} videos are 20+ minutes`);
+
+        // Sort reverse chronological
+        allVideos.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
+
+        // Cache the results
+        setVpCache(allVideos);
+
+        // Render
+        renderVpList(allVideos);
+
+    } catch (err) {
+        console.error('[VP] Fetch error:', err);
+        container.innerHTML = `<div class="vp-loading" style="color:var(--red);">❌ Failed to load video data: ${err.message}</div>`;
+    }
+}
+
+function renderVpList(videos) {
+    const container = document.getElementById('vpContainer');
+
+    if (!videos || videos.length === 0) {
+        container.innerHTML = '<div class="vp-loading">No videos over 20 minutes found.</div>';
+        return;
+    }
+
+    // Compute average views
+    const totalViews = videos.reduce((sum, v) => sum + v.views, 0);
+    const avgViews = totalViews / videos.length;
+    const aboveThreshold = avgViews * 1.2;
+    const belowThreshold = avgViews * 0.8;
+
+    function getColor(views) {
+        if (views >= aboveThreshold) return 'green';
+        if (views <= belowThreshold) return 'red';
+        return 'yellow';
+    }
+
+    // Build HTML
+    const cache = getVpCache();
+    const cacheAge = cache ? Math.round((Date.now() - cache.timestamp) / 60000) : 0;
+    const updatedText = cacheAge < 1 ? 'Updated just now' : `Updated ${cacheAge} min ago`;
+
+    let html = `
+        <div class="vp-header">
+            <h2>📊 Video Performance (${videos.length} videos over 20 min)</h2>
+            <div class="vp-meta">${updatedText} · Refreshes hourly</div>
+        </div>
+        <div class="vp-legend">
+            <div class="vp-legend-item"><div class="vp-legend-dot green"></div> Above average</div>
+            <div class="vp-legend-item"><div class="vp-legend-dot yellow"></div> About average</div>
+            <div class="vp-legend-item"><div class="vp-legend-dot red"></div> Below average</div>
+        </div>
+        <div class="vp-avg-bar">Average: ${formatNumber(Math.round(avgViews))} views per video</div>
+        <div class="vp-list">
+    `;
+
+    videos.forEach(v => {
+        const color = getColor(v.views);
+        const date = new Date(v.publishedAt);
+        const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+        html += `
+            <div class="vp-item ${color}">
+                <img class="vp-thumb" src="${v.thumbnail}" alt="" loading="lazy">
+                <div class="vp-info">
+                    <div class="vp-title" title="${esc(v.title)}">${esc(v.title)}</div>
+                    <div class="vp-date">${dateStr} · ${formatDuration(v.duration)}</div>
+                </div>
+                <div class="vp-views ${color}">${formatNumber(v.views)} views</div>
+            </div>
+        `;
+    });
+
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+function renderVideoPerformance() {
+    const cache = getVpCache();
+    if (cache && cache.videos) {
+        renderVpList(cache.videos);
+    } else {
+        fetchVideoPerformance();
+    }
+}
+
+// Hourly auto-refresh for video performance
+setInterval(() => {
+    localStorage.removeItem(VP_CACHE_KEY);
+    // Only re-fetch if the tab is currently active
+    if (document.getElementById('videoperf')?.classList.contains('active')) {
+        fetchVideoPerformance();
+    }
+}, VP_CACHE_TTL);
 
 // ---- Copy Shareable Link ----
 function copyShareableLink() {

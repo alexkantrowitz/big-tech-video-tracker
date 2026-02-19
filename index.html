@@ -1915,6 +1915,51 @@ function generateVpInsights(videos) {
     return insights;
 }
 
+async function fetchAiInsights(videos) {
+    if (!videos || videos.length < 3) return null;
+    try {
+        const totalViews = videos.reduce((s, v) => s + v.views, 0);
+        const avgViews = Math.round(totalViews / videos.length);
+        const recent5 = videos.slice(0, Math.min(5, videos.length));
+        const recentAvg = Math.round(recent5.reduce((s, v) => s + v.views, 0) / recent5.length);
+
+        const payload = {
+            videos: videos.slice(0, 40).map(v => ({
+                title: v.title,
+                views: v.views,
+                duration: Math.round(v.duration),
+                date: new Date(v.publishedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+            })),
+            stats: {
+                totalVideos: videos.length,
+                avgViews: formatNumber(avgViews),
+                recentAvg: formatNumber(recentAvg),
+                channelAvg: formatNumber(avgViews)
+            }
+        };
+
+        const res = await fetch(NB_WORKER_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+            console.warn('[VP] AI insights worker error:', res.status);
+            return null;
+        }
+
+        const data = await res.json();
+        if (data.insights && data.insights.length > 0) {
+            return data.insights;
+        }
+        return null;
+    } catch (e) {
+        console.warn('[VP] AI insights failed:', e.message);
+        return null;
+    }
+}
+
 function renderVpList(videos, page) {
     const container = document.getElementById('vpContainer');
     vpAllVideos = videos;
@@ -1963,9 +2008,9 @@ function renderVpList(videos, page) {
     `;
 
     if (insights.length > 0) {
-        html += `<div class="vp-insights">
-            <div class="vp-insights-title">💡 Insights</div>
-            <ul>${insights.map(i => `<li>${i}</li>`).join('')}</ul>
+        html += `<div class="vp-insights" id="vpInsightsBox">
+            <div class="vp-insights-title">💡 Insights <span id="vpInsightsStatus" style="font-size:11px;color:#8899aa;font-weight:normal;margin-left:8px;">⏳ Generating fresh AI insights...</span></div>
+            <ul id="vpInsightsList">${insights.map(i => `<li>${i}</li>`).join('')}</ul>
         </div>`;
     }
 
@@ -2010,6 +2055,20 @@ function renderVpList(videos, page) {
     }
 
     container.innerHTML = html;
+
+    // Async: fetch AI-powered insights and replace hardcoded ones
+    if (insights.length > 0 && page === 0) {
+        fetchAiInsights(videos).then(aiInsights => {
+            const listEl = document.getElementById('vpInsightsList');
+            const statusEl = document.getElementById('vpInsightsStatus');
+            if (aiInsights && aiInsights.length > 0 && listEl) {
+                listEl.innerHTML = aiInsights.map(i => `<li>${i}</li>`).join('');
+                if (statusEl) statusEl.textContent = '✨ AI-powered';
+            } else {
+                if (statusEl) statusEl.textContent = '';
+            }
+        });
+    }
 }
 
 function vpGoPage(page) {

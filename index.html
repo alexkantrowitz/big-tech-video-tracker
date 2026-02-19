@@ -426,6 +426,175 @@
             .vp-thumb { width: 100%; height: auto; aspect-ratio: 16/9; }
         }
 
+        /* ---- News Briefs ---- */
+        .nb-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 20px; flex-wrap: wrap; gap: 12px;
+        }
+        .nb-header h2 { font-size: 18px; font-weight: 700; color: var(--navy); }
+        .nb-week-nav {
+            display: flex; align-items: center; gap: 12px;
+        }
+        .nb-week-label {
+            font-size: 13px; font-weight: 600; color: var(--steel);
+            min-width: 200px; text-align: center;
+        }
+        .nb-week-btn {
+            width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--cloud);
+            background: var(--pure-white); color: var(--navy); font-size: 16px; font-weight: 700;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s ease; box-shadow: var(--shadow); font-family: 'Inter', sans-serif;
+        }
+        .nb-week-btn:hover:not(:disabled) { background: var(--navy); color: var(--pure-white); }
+        .nb-week-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+        .nb-actions {
+            display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: center;
+        }
+        .nb-actions .btn { font-size: 12px; }
+        .nb-status {
+            font-size: 12px; color: var(--steel); margin-left: auto;
+        }
+        .nb-status.success { color: var(--green); }
+        .nb-list {
+            display: flex; flex-direction: column; gap: 0;
+            background: var(--pure-white); border: 1px solid var(--cloud);
+            border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden;
+        }
+        .nb-item {
+            display: flex; align-items: flex-start; gap: 14px;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--cloud);
+            transition: background 0.15s ease;
+        }
+        .nb-item:last-child { border-bottom: none; }
+        .nb-item:hover { background: #f0f3f7; }
+        .nb-rank {
+            font-size: 14px; font-weight: 700; color: var(--accent);
+            min-width: 28px; text-align: center; padding-top: 1px;
+        }
+        .nb-content { flex: 1; min-width: 0; }
+        .nb-headline {
+            font-size: 14px; font-weight: 600; color: var(--navy);
+            line-height: 1.4; margin-bottom: 4px;
+        }
+        .nb-source {
+            font-size: 12px; font-weight: 600; color: var(--steel);
+        }
+        .nb-source a {
+            color: var(--blue); text-decoration: none;
+            border-bottom: 1px solid transparent;
+            transition: border-color 0.2s ease;
+        }
+        .nb-source a:hover { border-bottom-color: var(--blue); }
+        .nb-date {
+            font-size: 11px; color: var(--silver); margin-left: 8px; font-weight: 400;
+        }
+        .nb-empty {
+            text-align: center; padding: 60px 20px; color: var(--steel);
+            font-size: 14px; font-weight: 500;
+        }
+        .nb-email-row {
+            display: flex; align-items: center; gap: 12px; margin-top: 20px;
+            padding: 16px 20px; background: var(--pure-white); border: 1px solid var(--cloud);
+            border-radius: var(--radius); box-shadow: var(--shadow);
+        }
+        .nb-email-row label { font-size: 13px; font-weight: 600; color: var(--navy); }
+        .nb-email-status {
+            font-size: 12px; color: var(--steel); margin-left: auto;
+        }
+        .nb-toggle {
+            position: relative; width: 44px; height: 24px; cursor: pointer;
+        }
+        .nb-toggle input { opacity: 0; width: 0; height: 0; }
+        .nb-toggle-slider {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: var(--cloud); border-radius: 12px; transition: 0.3s;
+        }
+        .nb-toggle-slider::before {
+            content: ''; position: absolute; width: 18px; height: 18px;
+            left: 3px; bottom: 3px; background: var(--pure-white);
+            border-radius: 50%; transition: 0.3s; box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+        }
+        .nb-toggle input:checked + .nb-toggle-slider { background: var(--accent); }
+        .nb-toggle input:checked + .nb-toggle-slider::before { transform: translateX(20px); }
+
+        /* ---- Thumbnail Performance ---- */
+        .tp-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 20px; flex-wrap: wrap; gap: 12px;
+        }
+        .tp-header h2 { font-size: 18px; font-weight: 700; color: var(--navy); }
+        .tp-meta { font-size: 12px; color: var(--steel); }
+        .tp-tier {
+            margin-bottom: 28px;
+        }
+        .tp-tier-header {
+            display: flex; align-items: center; gap: 10px;
+            margin-bottom: 14px; padding-bottom: 8px; border-bottom: 2px solid var(--cloud);
+        }
+        .tp-tier-badge {
+            padding: 4px 12px; border-radius: 20px; font-size: 11px;
+            font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .tp-tier-badge.top { background: #dcfce7; color: #15803d; }
+        .tp-tier-badge.mid { background: #fef9c3; color: #a16207; }
+        .tp-tier-badge.bottom { background: #fee2e2; color: #b91c1c; }
+        .tp-tier-label {
+            font-size: 14px; font-weight: 600; color: var(--navy);
+        }
+        .tp-tier-range {
+            font-size: 12px; color: var(--steel); margin-left: auto;
+        }
+        .tp-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+        }
+        .tp-card {
+            background: var(--pure-white); border: 1px solid var(--cloud);
+            border-radius: var(--radius); overflow: hidden;
+            box-shadow: var(--shadow); transition: transform 0.15s ease, box-shadow 0.15s ease;
+            position: relative;
+        }
+        .tp-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+        .tp-card.top { border-top: 3px solid #22c55e; }
+        .tp-card.mid { border-top: 3px solid #eab308; }
+        .tp-card.bottom { border-top: 3px solid #ef4444; }
+        .tp-card-img {
+            width: 100%; aspect-ratio: 16/9; object-fit: cover;
+            display: block; background: var(--cloud);
+        }
+        .tp-card-body {
+            padding: 12px 14px;
+        }
+        .tp-card-title {
+            font-size: 13px; font-weight: 600; color: var(--navy);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            margin-bottom: 6px;
+        }
+        .tp-card-stats {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 8px;
+        }
+        .tp-card-views {
+            font-size: 14px; font-weight: 700;
+        }
+        .tp-card-views.top { color: #15803d; }
+        .tp-card-views.mid { color: #a16207; }
+        .tp-card-views.bottom { color: #b91c1c; }
+        .tp-card-date {
+            font-size: 11px; color: var(--steel);
+        }
+        .tp-rank {
+            position: absolute; top: 8px; left: 8px;
+            background: rgba(26, 35, 50, 0.85); color: var(--pure-white);
+            font-size: 11px; font-weight: 700; padding: 3px 8px;
+            border-radius: 4px; backdrop-filter: blur(4px);
+        }
+        @media (max-width: 640px) {
+            .tp-grid { grid-template-columns: 1fr; }
+        }
+
         /* ---- Toast ---- */
         .toast {
             position: fixed; bottom: 28px; right: 28px; padding: 14px 24px; border-radius: var(--radius);
@@ -505,6 +674,8 @@
     <div class="tab active" data-tab="videos">Videos</div>
     <div class="tab" data-tab="dashboard">Dashboard</div>
     <div class="tab" data-tab="videoperf">Video Performance</div>
+    <div class="tab" data-tab="thumbperf">Thumbnail Performance</div>
+    <div class="tab" data-tab="newsbriefs">News Briefs</div>
     <div class="tab" data-tab="newmonth">New Month</div>
     <div class="tab" data-tab="settings">Email Settings</div>
 </div>
@@ -598,6 +769,26 @@
             <div class="vp-loading" id="vpLoading">
                 <div class="spinner"></div>
                 Loading video performance data...
+            </div>
+        </div>
+    </div>
+
+    <!-- Thumbnail Performance Tab -->
+    <div id="thumbperf" class="tab-content">
+        <div id="tpContainer">
+            <div class="vp-loading" id="tpLoading">
+                <div class="spinner"></div>
+                Loading thumbnail performance data...
+            </div>
+        </div>
+    </div>
+
+    <!-- News Briefs Tab -->
+    <div id="newsbriefs" class="tab-content">
+        <div id="nbContainer">
+            <div class="vp-loading" id="nbLoading">
+                <div class="spinner"></div>
+                Loading news briefs...
             </div>
         </div>
     </div>
@@ -1431,6 +1622,8 @@ document.querySelectorAll('.tab').forEach(tab => {
         document.getElementById(tab.dataset.tab).classList.add('active');
         if (tab.dataset.tab === 'dashboard') renderDashboard();
         if (tab.dataset.tab === 'videoperf') renderVideoPerformance();
+        if (tab.dataset.tab === 'thumbperf') renderThumbnailPerformance();
+        if (tab.dataset.tab === 'newsbriefs') loadNewsBriefs();
     });
 });
 
@@ -1574,12 +1767,12 @@ function formatDuration(mins) {
     return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
-function getVpCache() {
+function getVpCache(ignoreExpiry) {
     try {
         const raw = localStorage.getItem(VP_CACHE_KEY);
         if (!raw) return null;
         const cache = JSON.parse(raw);
-        if (Date.now() - cache.timestamp > VP_CACHE_TTL) return null; // stale
+        if (!ignoreExpiry && Date.now() - cache.timestamp > VP_CACHE_TTL) return null; // stale
         return cache;
     } catch (e) { return null; }
 }
@@ -1822,20 +2015,630 @@ function renderVideoPerformance() {
     const cache = getVpCache();
     if (cache && cache.videos) {
         renderVpList(cache.videos, vpCurrentPage);
-    } else {
-        vpCurrentPage = 0;
-        fetchVideoPerformance();
+        return;
     }
+    // Try stale cache — way better than a 403 error
+    const staleCache = getVpCache(true);
+    if (staleCache && staleCache.videos) {
+        renderVpList(staleCache.videos, vpCurrentPage);
+        return;
+    }
+    vpCurrentPage = 0;
+    fetchVideoPerformance();
 }
 
 // Hourly auto-refresh for video performance
 setInterval(() => {
-    localStorage.removeItem(VP_CACHE_KEY);
-    // Only re-fetch if the tab is currently active
+    // Only re-fetch if the tab is currently active (cache will be overwritten on success)
     if (document.getElementById('videoperf')?.classList.contains('active')) {
         fetchVideoPerformance();
     }
 }, VP_CACHE_TTL);
+
+// ---- Thumbnail Performance ----
+// Shares data with Video Performance tab — no separate API calls needed.
+
+function renderThumbnailPerformance() {
+    // 1. VP already has videos in memory from this session
+    if (vpAllVideos && vpAllVideos.length > 0) {
+        renderTpGrid(vpAllVideos.slice(0, 30));
+        return;
+    }
+    // 2. Fresh VP cache
+    const vpCache = getVpCache();
+    if (vpCache && vpCache.videos && vpCache.videos.length > 0) {
+        renderTpGrid(vpCache.videos.slice(0, 30));
+        return;
+    }
+    // 3. Stale VP cache — better than nothing when API quota is burned
+    const staleCache = getVpCache(true);
+    if (staleCache && staleCache.videos && staleCache.videos.length > 0) {
+        renderTpGrid(staleCache.videos.slice(0, 30));
+        return;
+    }
+    // 4. No data anywhere — try fetching
+    const container = document.getElementById('tpContainer');
+    container.innerHTML = '<div class="vp-loading"><div class="spinner"></div>Fetching video data from YouTube...</div>';
+    fetchVideoPerformance().then(() => {
+        if (vpAllVideos && vpAllVideos.length > 0) {
+            renderTpGrid(vpAllVideos.slice(0, 30));
+        }
+    }).catch(() => {
+        container.innerHTML = '<div class="vp-loading" style="color:var(--red);">❌ YouTube API quota exceeded. Try again later when the daily quota resets.</div>';
+    });
+}
+
+function renderTpGrid(allVideos) {
+    const container = document.getElementById('tpContainer');
+
+    if (!allVideos || allVideos.length === 0) {
+        container.innerHTML = '<div class="vp-loading">No videos found.</div>';
+        return;
+    }
+
+    // Take last 30 videos by publish date (most recent 30), then sort by views
+    const recent30 = allVideos.slice(0, 30);
+    const sorted = [...recent30].sort((a, b) => b.views - a.views);
+
+    const top10 = sorted.slice(0, 10);
+    const mid10 = sorted.slice(10, 20);
+    const bottom10 = sorted.slice(20, 30);
+
+    // Cache age
+    const cache = getVpCache();
+    const cacheAge = cache ? Math.round((Date.now() - cache.timestamp) / 60000) : 0;
+    const updatedText = cacheAge < 1 ? 'Updated just now' : `Updated ${cacheAge} min ago`;
+
+    function buildTierHtml(videos, tier, tierLabel, rankOffset) {
+        const viewRange = videos.length > 0
+            ? `${formatNumber(videos[videos.length - 1].views)} – ${formatNumber(videos[0].views)} views`
+            : '';
+
+        let html = `<div class="tp-tier">
+            <div class="tp-tier-header">
+                <span class="tp-tier-badge ${tier}">${tierLabel}</span>
+                <span class="tp-tier-label">${tier === 'top' ? 'Highest Performing' : tier === 'mid' ? 'Middle of the Pack' : 'Lowest Performing'}</span>
+                <span class="tp-tier-range">${viewRange}</span>
+            </div>
+            <div class="tp-grid">`;
+
+        videos.forEach((v, i) => {
+            const date = new Date(v.publishedAt);
+            const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            // Use medium thumbnail, fallback to maxres or default
+            const thumbUrl = v.thumbnail || '';
+
+            html += `
+                <div class="tp-card ${tier}">
+                    <div class="tp-rank">#${rankOffset + i + 1}</div>
+                    <img class="tp-card-img" src="${thumbUrl}" alt="" loading="lazy">
+                    <div class="tp-card-body">
+                        <div class="tp-card-title" title="${esc(v.title)}">${esc(v.title)}</div>
+                        <div class="tp-card-stats">
+                            <span class="tp-card-views ${tier}">${formatNumber(v.views)} views</span>
+                            <span class="tp-card-date">${dateStr}</span>
+                        </div>
+                    </div>
+                </div>`;
+        });
+
+        html += '</div></div>';
+        return html;
+    }
+
+    let html = `
+        <div class="tp-header">
+            <h2>🖼️ Thumbnail Performance (Last 30 Videos)</h2>
+            <div class="tp-meta">${updatedText} · Sorted by views</div>
+        </div>
+    `;
+
+    html += buildTierHtml(top10, 'top', 'Top 10', 0);
+    html += buildTierHtml(mid10, 'mid', 'Middle 10', 10);
+    html += buildTierHtml(bottom10, 'bottom', 'Bottom 10', 20);
+
+    container.innerHTML = html;
+}
+
+// ---- News Briefs ----
+const NB_CACHE_KEY = 'bigtech_nb_cache';
+const NB_CACHE_TTL = 3600000; // 1 hour
+const NB_SEND_KEY = 'bigtech_nb_last_send';
+const NB_AUTO_KEY = 'bigtech_nb_auto_email';
+const NB_WORKER_URL = 'https://news-briefs-rewriter.alex-kantrowitz.workers.dev';
+const NB_CORS_PROXIES = [
+    url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+    url => `https://corsproxy.io/?${encodeURIComponent(url)}`
+];
+const NB_PREFERRED_SOURCES = [
+    'the verge', 'techcrunch', 'wsj', 'wall street journal', 'new york times', 'nytimes',
+    'wired', 'cnbc', 'bloomberg', 'ars technica', 'semafor', 'the information',
+    'platformer', '404 media', 'reuters', 'associated press', 'washington post',
+    'financial times', 'the atlantic', 'bbc', 'theverge'
+];
+
+let nbWeekOffset = 0; // 0 = current week, -1 = last week, etc.
+
+function getNbWeekWindow(offset = 0) {
+    // Week runs Saturday 00:00 ET → Thursday 23:59 ET
+    const now = new Date();
+    // Convert to ET
+    const et = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+
+    // Find the most recent Saturday
+    const day = et.getDay(); // 0=Sun, 6=Sat
+    let satOffset = day >= 6 ? day - 6 : day + 1; // days since last Saturday
+    const saturday = new Date(et);
+    saturday.setDate(saturday.getDate() - satOffset + (offset * 7));
+    saturday.setHours(0, 0, 0, 0);
+
+    const thursday = new Date(saturday);
+    thursday.setDate(thursday.getDate() + 5); // Thursday = Saturday + 5
+    thursday.setHours(23, 59, 59, 999);
+
+    return { start: saturday, end: thursday };
+}
+
+function formatNbDate(d) {
+    return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
+function getNbCache() {
+    try {
+        const raw = localStorage.getItem(NB_CACHE_KEY);
+        if (!raw) return null;
+        const cache = JSON.parse(raw);
+        if (Date.now() - cache.timestamp > NB_CACHE_TTL) return null;
+        return cache;
+    } catch (e) { return null; }
+}
+
+function setNbCache(stories) {
+    localStorage.setItem(NB_CACHE_KEY, JSON.stringify({ timestamp: Date.now(), stories }));
+}
+
+async function fetchTechmemeRSS() {
+    const feedUrl = 'https://techmeme.com/feed.xml';
+
+    for (let i = 0; i < NB_CORS_PROXIES.length; i++) {
+        try {
+            const proxyUrl = NB_CORS_PROXIES[i](feedUrl);
+            const res = await fetch(proxyUrl);
+            if (!res.ok) continue;
+            const text = await res.text();
+            return parseRSSFeed(text);
+        } catch (e) {
+            console.warn(`[NB] Proxy ${i} failed:`, e.message);
+        }
+    }
+    throw new Error('All CORS proxies failed. Try again later.');
+}
+
+function parseRSSFeed(xml) {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(xml, 'text/xml');
+    const items = doc.querySelectorAll('item');
+    const stories = [];
+
+    items.forEach(item => {
+        const rawTitle = item.querySelector('title')?.textContent?.trim() || '';
+        const link = item.querySelector('link')?.textContent?.trim() || '';
+        const desc = item.querySelector('description')?.textContent?.trim() || '';
+        const pubDate = item.querySelector('pubDate')?.textContent?.trim() || '';
+
+        // Extract source from title — Techmeme format: "Headline text (Author/Publication)"
+        let source = '';
+        let title = rawTitle;
+        const titleSourceMatch = rawTitle.match(/\(([^)]+\/([^)]+))\)\s*$/);
+        if (titleSourceMatch) {
+            source = titleSourceMatch[2].trim();
+            // Strip the attribution from the title
+            title = rawTitle.replace(/\s*\([^)]*\/[^)]*\)\s*$/, '').trim();
+        } else {
+            // Some entries have just (Publication) without author
+            const titlePubMatch = rawTitle.match(/\(([^)/]+)\)\s*$/);
+            if (titlePubMatch) {
+                source = titlePubMatch[1].trim();
+                title = rawTitle.replace(/\s*\([^)]+\)\s*$/, '').trim();
+            }
+        }
+
+        // Fallback: extract source from description HTML
+        // Description format: "Author / <a href="...">Publication</a>:"
+        if (!source) {
+            const descDoc = parser.parseFromString(desc, 'text/html');
+            const allLinks = descDoc.querySelectorAll('a');
+            for (const a of allLinks) {
+                const href = a.getAttribute('href') || '';
+                const text = a.textContent.trim();
+                // Skip techmeme links and image links — look for publication name links
+                if (!href.includes('techmeme.com') && text.length > 1 && text.length < 40 && !href.match(/\.(jpg|png|gif)$/i)) {
+                    source = text;
+                    break;
+                }
+            }
+        }
+
+        // Final fallback: extract from article link domain
+        if (!source) {
+            const descDoc = parser.parseFromString(desc, 'text/html');
+            const allLinks = descDoc.querySelectorAll('a');
+            for (const a of allLinks) {
+                const href = a.getAttribute('href') || '';
+                if (href && !href.includes('techmeme.com') && !href.match(/\.(jpg|png|gif)$/i)) {
+                    try {
+                        const url = new URL(href);
+                        source = url.hostname.replace('www.', '').split('.')[0];
+                        source = source.charAt(0).toUpperCase() + source.slice(1);
+                    } catch (e) {}
+                    break;
+                }
+            }
+        }
+
+        // Extract original article link from description if Techmeme link
+        let articleLink = link;
+        const descDoc2 = parser.parseFromString(desc, 'text/html');
+        const allLinks2 = descDoc2.querySelectorAll('a');
+        for (const a of allLinks2) {
+            const href = a.getAttribute('href') || '';
+            if (href && !href.includes('techmeme.com') && !href.match(/\.(jpg|png|gif)$/i)) {
+                articleLink = href;
+                break;
+            }
+        }
+
+        if (title) {
+            stories.push({
+                title,
+                link: articleLink,
+                source: source || 'Techmeme',
+                pubDate: pubDate ? new Date(pubDate) : new Date(),
+                description: descDoc2.body?.textContent?.trim() || ''
+            });
+        }
+    });
+
+    return stories;
+}
+
+function rankNbStories(stories, window) {
+    // Filter to the week window
+    const filtered = stories.filter(s => {
+        const d = s.pubDate;
+        return d >= window.start && d <= window.end;
+    });
+
+    // Score: position bonus (earlier in RSS = more prominent) + preferred source boost
+    filtered.forEach((s, i) => {
+        let score = Math.max(0, 100 - i); // Position score (higher = earlier in feed)
+        const srcLower = s.source.toLowerCase();
+        if (NB_PREFERRED_SOURCES.some(p => srcLower.includes(p))) {
+            score += 25; // Preferred source boost
+        }
+        s.score = score;
+    });
+
+    // Deduplicate by similar titles (keep highest scored)
+    const seen = new Map();
+    filtered.forEach(s => {
+        const key = s.title.toLowerCase().replace(/[^a-z0-9]/g, '').substring(0, 40);
+        if (!seen.has(key) || s.score > seen.get(key).score) {
+            seen.set(key, s);
+        }
+    });
+
+    const unique = [...seen.values()];
+    unique.sort((a, b) => b.score - a.score);
+    return unique.slice(0, 10);
+}
+
+async function rewriteNbHeadlines(stories) {
+    if (!stories || stories.length === 0) return stories;
+    try {
+        const headlines = stories.map(s => s.title);
+        const res = await fetch(NB_WORKER_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ headlines })
+        });
+        if (!res.ok) {
+            console.warn('[NB] Rewrite worker error:', res.status);
+            return stories;
+        }
+        const data = await res.json();
+        if (data.rewritten && data.rewritten.length === stories.length) {
+            stories.forEach((s, i) => {
+                s.originalTitle = s.title;
+                s.title = data.rewritten[i];
+            });
+        }
+    } catch (e) {
+        console.warn('[NB] Rewrite failed, using original headlines:', e.message);
+    }
+    return stories;
+}
+
+async function loadNewsBriefs() {
+    const container = document.getElementById('nbContainer');
+
+    // Try cache first (only for current week offset 0)
+    if (nbWeekOffset === 0) {
+        const cache = getNbCache();
+        if (cache && cache.stories && cache.stories.length > 0) {
+            renderNewsBriefs(cache.stories);
+            return;
+        }
+    }
+
+    // Check for saved week data
+    const savedKey = `bigtech_nb_week_${nbWeekOffset}`;
+    try {
+        const saved = localStorage.getItem(savedKey);
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            if (parsed.stories && parsed.stories.length > 0) {
+                // Restore Date objects
+                parsed.stories.forEach(s => s.pubDate = new Date(s.pubDate));
+                renderNewsBriefs(parsed.stories);
+                return;
+            }
+        }
+    } catch (e) {}
+
+    container.innerHTML = '<div class="vp-loading"><div class="spinner"></div>Fetching stories from Techmeme...</div>';
+
+    try {
+        const allStories = await fetchTechmemeRSS();
+        const window = getNbWeekWindow(nbWeekOffset);
+        const top10 = rankNbStories(allStories, window);
+
+        // Rewrite headlines with Claude via Worker
+        if (top10.length > 0) {
+            container.innerHTML = '<div class="vp-loading"><div class="spinner"></div>Rewriting headlines with AI...</div>';
+            await rewriteNbHeadlines(top10);
+        }
+
+        // Cache results (with rewritten titles)
+        if (nbWeekOffset === 0) {
+            setNbCache(top10);
+        }
+        // Also save per-week
+        localStorage.setItem(`bigtech_nb_week_${nbWeekOffset}`, JSON.stringify({ stories: top10 }));
+
+        renderNewsBriefs(top10);
+    } catch (err) {
+        console.error('[NB] Fetch error:', err);
+        container.innerHTML = `<div class="vp-loading" style="color:var(--red);">Failed to load stories: ${err.message}</div>`;
+    }
+}
+
+function renderNewsBriefs(stories) {
+    const container = document.getElementById('nbContainer');
+    const window = getNbWeekWindow(nbWeekOffset);
+    const isCurrentWeek = nbWeekOffset === 0;
+    const autoEmail = localStorage.getItem(NB_AUTO_KEY) === 'true';
+    const lastSend = localStorage.getItem(NB_SEND_KEY);
+    const lastSendText = lastSend ? `Last sent: ${new Date(parseInt(lastSend)).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}` : 'Never sent';
+
+    let html = `
+        <div class="nb-header">
+            <h2>📰 News Briefs</h2>
+            <div class="nb-week-nav">
+                <button class="nb-week-btn" onclick="nbChangeWeek(-1)">‹</button>
+                <span class="nb-week-label">${formatNbDate(window.start)} → ${formatNbDate(window.end)}</span>
+                <button class="nb-week-btn" onclick="nbChangeWeek(1)" ${isCurrentWeek ? 'disabled' : ''}>›</button>
+            </div>
+        </div>
+        <div class="nb-actions">
+            <button class="btn btn-primary" onclick="nbRefresh()">🔄 Refresh</button>
+            <button class="btn btn-accent" onclick="nbCopyForNewsletter()" ${stories.length === 0 ? 'disabled' : ''}>📋 Copy for Newsletter</button>
+            <button class="btn btn-email" onclick="nbSendEmail()" ${stories.length === 0 ? 'disabled' : ''}>📧 Send Email Now</button>
+            <span class="nb-status" id="nbStatus"></span>
+        </div>
+    `;
+
+    if (stories.length === 0) {
+        html += '<div class="nb-empty">No stories found for this week yet. Stories accumulate Saturday through Thursday.</div>';
+    } else {
+        html += '<div class="nb-list">';
+        stories.forEach((s, i) => {
+            const dateStr = s.pubDate ? new Date(s.pubDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : '';
+            html += `
+                <div class="nb-item">
+                    <div class="nb-rank">${i + 1}</div>
+                    <div class="nb-content">
+                        <div class="nb-headline" ${s.originalTitle ? `title="${esc(s.originalTitle)}"` : ''}>${esc(s.title)}</div>
+                        <span class="nb-source">[<a href="${esc(s.link)}" target="_blank" rel="noopener">${esc(s.source)}</a>]</span>
+                        <span class="nb-date">${dateStr}</span>
+                    </div>
+                </div>`;
+        });
+        html += '</div>';
+    }
+
+    // Auto-email row
+    html += `
+        <div class="nb-email-row">
+            <label>Auto-email Thursday 6 PM ET</label>
+            <label class="nb-toggle">
+                <input type="checkbox" ${autoEmail ? 'checked' : ''} onchange="nbToggleAutoEmail(this.checked)">
+                <span class="nb-toggle-slider"></span>
+            </label>
+            <span class="nb-email-status">${lastSendText}</span>
+        </div>
+    `;
+
+    container.innerHTML = html;
+}
+
+function nbChangeWeek(dir) {
+    nbWeekOffset += dir;
+    if (nbWeekOffset > 0) nbWeekOffset = 0;
+    loadNewsBriefs();
+}
+
+function nbRefresh() {
+    // Clear cache for current week and re-fetch
+    localStorage.removeItem(NB_CACHE_KEY);
+    localStorage.removeItem(`bigtech_nb_week_${nbWeekOffset}`);
+    loadNewsBriefs();
+}
+
+function nbCopyForNewsletter() {
+    const savedKey = nbWeekOffset === 0 ? NB_CACHE_KEY : `bigtech_nb_week_${nbWeekOffset}`;
+    let stories = [];
+
+    try {
+        const raw = localStorage.getItem(savedKey);
+        if (raw) {
+            const parsed = JSON.parse(raw);
+            stories = parsed.stories || parsed;
+        }
+    } catch (e) {}
+
+    // Also check direct cache
+    if (stories.length === 0) {
+        try {
+            const raw = localStorage.getItem(NB_CACHE_KEY);
+            if (raw) stories = JSON.parse(raw).stories || [];
+        } catch (e) {}
+    }
+
+    if (stories.length === 0) {
+        toast('No stories to copy', 'error');
+        return;
+    }
+
+    // Format as "What Else I'm Reading" style (use rewritten title, fallback to original)
+    const lines = stories.map(s => {
+        const headline = s.title || s.originalTitle || 'Untitled';
+        return `**${headline}** [${s.source}](${s.link})`;
+    });
+
+    const text = lines.join('\n\n');
+    navigator.clipboard.writeText(text).then(() => {
+        const el = document.getElementById('nbStatus');
+        if (el) { el.textContent = 'Copied!'; el.className = 'nb-status success'; }
+        toast('Stories copied to clipboard!', 'success');
+        setTimeout(() => { if (el) { el.textContent = ''; el.className = 'nb-status'; } }, 3000);
+    }).catch(() => {
+        // Fallback
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        toast('Stories copied to clipboard!', 'success');
+    });
+}
+
+function nbToggleAutoEmail(enabled) {
+    localStorage.setItem(NB_AUTO_KEY, enabled ? 'true' : 'false');
+    toast(enabled ? 'Auto-email enabled for Thursday 6 PM ET' : 'Auto-email disabled', 'success');
+}
+
+function nbGetStoriesForEmail() {
+    // Get current week stories
+    const cache = getNbCache();
+    if (cache && cache.stories && cache.stories.length > 0) return cache.stories;
+
+    const saved = localStorage.getItem('bigtech_nb_week_0');
+    if (saved) {
+        try {
+            const parsed = JSON.parse(saved);
+            if (parsed.stories && parsed.stories.length > 0) return parsed.stories;
+        } catch (e) {}
+    }
+    return [];
+}
+
+function nbBuildEmailHtml(stories) {
+    const window = getNbWeekWindow(0);
+    let html = `<h2 style="font-family:Inter,sans-serif;color:#1a2332;">📰 News Briefs</h2>`;
+    html += `<p style="font-family:Inter,sans-serif;color:#8899aa;font-size:13px;">${formatNbDate(window.start)} → ${formatNbDate(window.end)}</p>`;
+    html += `<div style="font-family:Inter,sans-serif;">`;
+
+    stories.forEach((s, i) => {
+        html += `<p style="margin:12px 0;font-size:14px;line-height:1.5;">
+            <strong>${i + 1}. ${s.title}</strong>
+            <span style="color:#8899aa;font-size:12px;">[<a href="${s.link}" style="color:#4a90d9;">${s.source}</a>]</span>
+        </p>`;
+    });
+
+    html += `</div>`;
+    return html;
+}
+
+async function nbSendEmail() {
+    const stories = nbGetStoriesForEmail();
+    if (stories.length === 0) {
+        toast('No stories to send', 'error');
+        return;
+    }
+
+    const settings = loadSettings();
+    if (!settings.emails || settings.emails.length === 0) {
+        toast('No email recipients configured. Check Email Settings tab.', 'error');
+        return;
+    }
+
+    const window = getNbWeekWindow(0);
+    const subject = `News Briefs: ${formatNbDate(window.start)} → ${formatNbDate(window.end)}`;
+    const body = nbBuildEmailHtml(stories);
+
+    try {
+        // Use the same EmailJS setup as the main tracker
+        const serviceId = settings.serviceId || 'default_service';
+        const templateId = settings.templateId;
+        const publicKey = settings.publicKey;
+
+        if (!templateId || !publicKey) {
+            toast('EmailJS not configured. Check Email Settings.', 'error');
+            return;
+        }
+
+        await emailjs.send(serviceId, templateId, {
+            to_email: settings.emails.join(','),
+            subject: subject,
+            message: body
+        }, publicKey);
+
+        localStorage.setItem(NB_SEND_KEY, Date.now().toString());
+        toast('News briefs email sent!', 'success');
+
+        // Re-render to update "Last sent" text
+        const cachedStories = nbGetStoriesForEmail();
+        if (cachedStories.length > 0) renderNewsBriefs(cachedStories);
+    } catch (err) {
+        console.error('[NB] Email error:', err);
+        toast('Email failed: ' + (err.text || err.message || 'Unknown error'), 'error');
+    }
+}
+
+// Auto-email check: runs every 15 minutes
+setInterval(() => {
+    const autoEnabled = localStorage.getItem(NB_AUTO_KEY) === 'true';
+    if (!autoEnabled) return;
+
+    const now = new Date();
+    const et = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+    const day = et.getDay(); // 4 = Thursday
+    const hour = et.getHours();
+    const min = et.getMinutes();
+
+    // Thursday between 6:00 PM and 6:15 PM ET
+    if (day === 4 && hour === 18 && min < 15) {
+        const lastSend = parseInt(localStorage.getItem(NB_SEND_KEY) || '0');
+        const hoursSinceSend = (Date.now() - lastSend) / 3600000;
+
+        if (hoursSinceSend > 24) {
+            console.log('[NB] Auto-sending Thursday evening email...');
+            nbSendEmail();
+        }
+    }
+}, 900000); // Every 15 minutes
 
 // ---- Copy Shareable Link ----
 function copyShareableLink() {

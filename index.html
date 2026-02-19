@@ -1781,12 +1781,13 @@ function setVpCache(videos) {
     localStorage.setItem(VP_CACHE_KEY, JSON.stringify({ timestamp: Date.now(), videos }));
 }
 
-async function fetchVideoPerformance() {
+async function fetchVideoPerformance(maxItems) {
     const container = document.getElementById('vpContainer');
     container.innerHTML = '<div class="vp-loading"><div class="spinner"></div>Fetching video data from YouTube...</div>';
 
     try {
-        // Step 1: Get all video IDs from the uploads playlist
+        // Step 1: Get video IDs from the uploads playlist
+        // maxItems limits how many playlist items to fetch (saves API quota)
         const uploadsPlaylistId = YT_CHANNEL_ID.replace('UC', 'UU');
         let allVideoIds = [];
         let pageToken = '';
@@ -1802,6 +1803,11 @@ async function fetchVideoPerformance() {
                 allVideoIds.push(item.snippet.resourceId.videoId);
             });
             pageToken = data.nextPageToken || '';
+            // Stop early if we have enough (saves quota)
+            if (maxItems && allVideoIds.length >= maxItems) {
+                allVideoIds = allVideoIds.slice(0, maxItems);
+                pageToken = '';
+            }
         } while (pageToken);
 
         console.log(`[VP] Found ${allVideoIds.length} total videos in uploads playlist`);
@@ -2060,7 +2066,7 @@ function renderThumbnailPerformance() {
     // 4. No data anywhere — try fetching
     const container = document.getElementById('tpContainer');
     container.innerHTML = '<div class="vp-loading"><div class="spinner"></div>Fetching video data from YouTube...</div>';
-    fetchVideoPerformance().then(() => {
+    fetchVideoPerformance(50).then(() => { // Only fetch 50 most recent (2 API calls)
         if (vpAllVideos && vpAllVideos.length > 0) {
             renderTpGrid(vpAllVideos.slice(0, 30));
         }

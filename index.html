@@ -829,11 +829,10 @@
                 <div style="display:flex; gap:10px; align-items:center; margin-top:12px; flex-wrap:wrap;">
                     <button class="btn btn-primary" onclick="addEmailField()">+ Add Email</button>
                     <button class="btn btn-secondary" onclick="testEmail()">Send Test Email</button>
-                    <button class="btn btn-secondary" onclick="copyShareableLink()" style="background:#e2a631; color:#0f172a; border:none;">📋 Copy Shareable Link</button>
                     <span id="emailStatus"></span>
                 </div>
                 <div style="margin-top:12px; padding:12px 16px; background:rgba(226,166,49,0.1); border:1px solid rgba(226,166,49,0.3); border-radius:8px; font-size:0.85rem; color:#94a3b8;">
-                    <strong style="color:#e2a631;">💡 Cross-Browser Tip:</strong> After adding your email recipients, click <strong>"Copy Shareable Link"</strong> and bookmark that URL. Use it to open the tracker on any browser/device — your email settings will be preserved in the link.
+                    <strong style="color:#e2a631;">💡 Cloud Sync:</strong> Email settings are automatically synced to the cloud. They'll persist across browsers and devices — no bookmarking needed.
                 </div>
             </div>
         </div>
@@ -1128,43 +1127,9 @@ const DEFAULT_SETTINGS = {
     ejsTemplateId: 'template_204ttnj'
 };
 
-// ---- URL Hash Config (persists settings across browsers) ----
-function loadSettingsFromHash() {
-    try {
-        const hash = window.location.hash;
-        if (hash && hash.startsWith('#config=')) {
-            const encoded = hash.substring(8);
-            const json = decodeURIComponent(atob(encoded));
-            return JSON.parse(json);
-        }
-    } catch (e) { console.warn('Could not parse URL config:', e); }
-    return null;
-}
-
-function saveSettingsToHash(settings) {
-    const json = JSON.stringify({
-        emails: settings.emails,
-        ejsPublicKey: settings.ejsPublicKey,
-        ejsServiceId: settings.ejsServiceId,
-        ejsTemplateId: settings.ejsTemplateId
-    });
-    const encoded = btoa(encodeURIComponent(json));
-    history.replaceState(null, '', '#config=' + encoded);
-}
-
+// ---- Settings (persisted to Cloudflare KV via Worker) ----
 function loadSettings() {
-    // Priority: 1) URL hash, 2) localStorage, 3) cloud data settings, 4) defaults
-    const hashSettings = loadSettingsFromHash();
-    if (hashSettings) {
-        // Save hash settings to localStorage too
-        localStorage.setItem(SETTINGS_KEY, JSON.stringify(hashSettings));
-        return {
-            emails: hashSettings.emails || DEFAULT_SETTINGS.emails,
-            ejsPublicKey: hashSettings.ejsPublicKey || DEFAULT_SETTINGS.ejsPublicKey,
-            ejsServiceId: hashSettings.ejsServiceId || DEFAULT_SETTINGS.ejsServiceId,
-            ejsTemplateId: hashSettings.ejsTemplateId || DEFAULT_SETTINGS.ejsTemplateId
-        };
-    }
+    // Priority: 1) localStorage cache, 2) cloud data settings, 3) defaults
     const raw = localStorage.getItem(SETTINGS_KEY);
     if (raw) {
         const saved = JSON.parse(raw);
@@ -1192,10 +1157,39 @@ function loadSettings() {
     return { ...DEFAULT_SETTINGS, emails: [''] };
 }
 
+async function fetchSettingsFromWorker() {
+    try {
+        const res = await fetch(NB_WORKER_URL + '/settings', { cache: 'no-store' });
+        if (!res.ok) return null;
+        const data = await res.json();
+        if (data && (data.emails || data.ejsPublicKey)) {
+            return data;
+        }
+        return null;
+    } catch (e) {
+        console.warn('[Settings] Worker fetch failed:', e.message);
+        return null;
+    }
+}
+
+async function saveSettingsToWorker(settings) {
+    try {
+        const res = await fetch(NB_WORKER_URL + '/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ settings })
+        });
+        if (!res.ok) console.warn('[Settings] Worker save error:', res.status);
+    } catch (e) {
+        console.warn('[Settings] Worker save failed:', e.message);
+    }
+}
+
 function saveSettingsData(settings) {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-    saveSettingsToHash(settings);
-    // Also sync settings to cloud
+    // Sync to Worker KV (async, non-blocking)
+    saveSettingsToWorker(settings);
+    // Also sync settings to npoint cloud
     const data = loadMonthsData();
     data.settings = settings;
     data.lastModified = Date.now();
@@ -2707,26 +2701,6 @@ setInterval(() => {
 }, 900000); // Every 15 minutes
 
 // ---- Copy Shareable Link ----
-function copyShareableLink() {
-    // First, save current settings to make sure hash is up-to-date
-    saveSettings();
-    const settings = loadSettings();
-    saveSettingsToHash(settings);
-    const url = window.location.href;
-    navigator.clipboard.writeText(url).then(() => {
-        toast('Shareable link copied to clipboard! Bookmark this URL to keep your settings.', 'success');
-    }).catch(() => {
-        // Fallback for older browsers
-        const ta = document.createElement('textarea');
-        ta.value = url;
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand('copy');
-        document.body.removeChild(ta);
-        toast('Shareable link copied to clipboard! Bookmark this URL to keep your settings.', 'success');
-    });
-}
-
 // ---- Toast ----
 function toast(msg, type = '') {
     const el = document.getElementById('toast');
@@ -2798,8 +2772,22 @@ updateStats();
 updateSubtitle();
 renderSettings();
 
+// ---- Strip legacy #config= hash if present ----
+if (window.location.hash && window.location.hash.startsWith('#config=')) {
+    history.replaceState(null, '', window.location.pathname + window.location.search);
+}
+
 // ---- Sync from cloud on load ----
 (async function syncOnLoad() {
+    // 1) Sync settings from Worker KV (source of truth for email settings)
+    const workerSettings = await fetchSettingsFromWorker();
+    if (workerSettings && workerSettings.emails && workerSettings.emails.length > 0) {
+        console.log('[Settings] Loaded from Worker KV:', workerSettings.emails.length, 'email(s)');
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify(workerSettings));
+        renderSettings();
+    }
+
+    // 2) Sync months data from npoint cloud
     if (!cloudSyncEnabled) return;
     console.log('[SYNC] Starting sync from', NPOINT_URL);
     const cloudData = await fetchFromCloud();
@@ -2813,10 +2801,6 @@ renderSettings();
         // Cloud has real data — use it as source of truth on page load
         console.log('[SYNC] Using cloud data as source of truth');
         localStorage.setItem(MONTHS_KEY, JSON.stringify(cloudData));
-        if (cloudData.settings) {
-            localStorage.setItem(SETTINGS_KEY, JSON.stringify(cloudData.settings));
-            renderSettings();
-        }
         loadActiveVideos();
         renderMonthBar();
         renderTable();

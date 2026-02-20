@@ -2097,6 +2097,39 @@ setInterval(() => {
 
 // ---- Thumbnail Performance ----
 // Shares data with Video Performance tab — no separate API calls needed.
+// CTR data fetched from YouTube Analytics via Cloudflare Worker.
+
+const TP_CTR_CACHE_KEY = 'bigtech_tp_ctr_cache';
+const TP_CTR_CACHE_TTL = 3600000; // 1 hour
+
+function getTpCtrCache() {
+    try {
+        const raw = localStorage.getItem(TP_CTR_CACHE_KEY);
+        if (!raw) return null;
+        const cached = JSON.parse(raw);
+        if (Date.now() - cached.timestamp > TP_CTR_CACHE_TTL) return null;
+        return cached.data;
+    } catch { return null; }
+}
+
+function setTpCtrCache(data) {
+    localStorage.setItem(TP_CTR_CACHE_KEY, JSON.stringify({ timestamp: Date.now(), data }));
+}
+
+async function fetchAnalyticsData(videoIds) {
+    // Check cache first
+    const cached = getTpCtrCache();
+    if (cached) return cached;
+
+    const ids = videoIds.join(',');
+    const resp = await fetch(NB_WORKER_URL + '/analytics?ids=' + encodeURIComponent(ids));
+    if (!resp.ok) throw new Error('Analytics fetch failed');
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error);
+    const analytics = data.analytics || {};
+    setTpCtrCache(analytics);
+    return analytics;
+}
 
 function renderThumbnailPerformance() {
     // 1. VP already has videos in memory from this session
@@ -2128,6 +2161,11 @@ function renderThumbnailPerformance() {
     });
 }
 
+function getViewsPerDay(video) {
+    const days = Math.max(1, (Date.now() - new Date(video.publishedAt).getTime()) / (1000 * 60 * 60 * 24));
+    return video.views / days;
+}
+
 function renderTpGrid(allVideos) {
     const container = document.getElementById('tpContainer');
 
@@ -2136,37 +2174,44 @@ function renderTpGrid(allVideos) {
         return;
     }
 
-    // Take last 30 videos by publish date (most recent 30), then sort by views
     const recent30 = allVideos.slice(0, 30);
-    const sorted = [...recent30].sort((a, b) => b.views - a.views);
-
-    const top10 = sorted.slice(0, 10);
-    const mid10 = sorted.slice(10, 20);
-    const bottom10 = sorted.slice(20, 30);
 
     // Cache age
     const cache = getVpCache();
     const cacheAge = cache ? Math.round((Date.now() - cache.timestamp) / 60000) : 0;
     const updatedText = cacheAge < 1 ? 'Updated just now' : `Updated ${cacheAge} min ago`;
 
-    function buildTierHtml(videos, tier, tierLabel, rankOffset) {
-        const viewRange = videos.length > 0
-            ? `${formatNumber(videos[videos.length - 1].views)} – ${formatNumber(videos[0].views)} views`
-            : '';
+    function buildTierHtml(videos, tier, tierLabel, rankOffset, analyticsData) {
+        const hasAnalytics = analyticsData && Object.keys(analyticsData).length > 0;
+        let rangeText;
+        if (hasAnalytics) {
+            const vpds = videos.map(v => getViewsPerDay(v)).filter(x => x > 0);
+            rangeText = vpds.length > 0
+                ? `${formatNumber(Math.round(Math.min(...vpds)))} – ${formatNumber(Math.round(Math.max(...vpds)))} views/day`
+                : '';
+        } else {
+            rangeText = videos.length > 0
+                ? `${formatNumber(videos[videos.length - 1].views)} – ${formatNumber(videos[0].views)} views`
+                : '';
+        }
 
         let html = `<div class="tp-tier">
             <div class="tp-tier-header">
                 <span class="tp-tier-badge ${tier}">${tierLabel}</span>
                 <span class="tp-tier-label">${tier === 'top' ? 'Highest Performing' : tier === 'mid' ? 'Middle of the Pack' : 'Lowest Performing'}</span>
-                <span class="tp-tier-range">${viewRange}</span>
+                <span class="tp-tier-range">${rangeText}</span>
             </div>
             <div class="tp-grid">`;
 
         videos.forEach((v, i) => {
             const date = new Date(v.publishedAt);
             const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-            // Use medium thumbnail, fallback to maxres or default
             const thumbUrl = v.thumbnail || '';
+            const vpd = Math.round(getViewsPerDay(v));
+            const aData = hasAnalytics && analyticsData[v.id];
+            const avgPct = aData?.avgViewPct;
+            const vpdText = hasAnalytics ? `${formatNumber(vpd)} views/day` : '';
+            const retText = avgPct != null ? `${avgPct.toFixed(1)}% retention` : '';
 
             html += `
                 <div class="tp-card ${tier}">
@@ -2175,7 +2220,9 @@ function renderTpGrid(allVideos) {
                     <div class="tp-card-body">
                         <div class="tp-card-title" title="${esc(v.title)}">${esc(v.title)}</div>
                         <div class="tp-card-stats">
-                            <span class="tp-card-views ${tier}">${formatNumber(v.views)} views</span>
+                            ${vpdText ? `<span class="tp-card-views ${tier}" style="font-weight:600;">${vpdText}</span>` : ''}
+                            <span class="tp-card-views ${vpdText ? '' : tier}">${formatNumber(v.views)} views</span>
+                            ${retText ? `<span class="tp-card-date">${retText}</span>` : ''}
                             <span class="tp-card-date">${dateStr}</span>
                         </div>
                     </div>
@@ -2186,18 +2233,45 @@ function renderTpGrid(allVideos) {
         return html;
     }
 
-    let html = `
-        <div class="tp-header">
-            <h2>🖼️ Thumbnail Performance (Last 30 Videos)</h2>
-            <div class="tp-meta">${updatedText} · Sorted by views</div>
-        </div>
-    `;
+    function renderWithData(sorted, analyticsData, sortLabel) {
+        const top10 = sorted.slice(0, 10);
+        const mid10 = sorted.slice(10, 20);
+        const bottom10 = sorted.slice(20, 30);
 
-    html += buildTierHtml(top10, 'top', 'Top 10', 0);
-    html += buildTierHtml(mid10, 'mid', 'Middle 10', 10);
-    html += buildTierHtml(bottom10, 'bottom', 'Bottom 10', 20);
+        let html = `
+            <div class="tp-header">
+                <h2>🖼️ Thumbnail Performance (Last 30 Videos)</h2>
+                <div class="tp-meta">${updatedText} · ${sortLabel}</div>
+            </div>
+        `;
 
-    container.innerHTML = html;
+        html += buildTierHtml(top10, 'top', 'Top 10', 0, analyticsData);
+        html += buildTierHtml(mid10, 'mid', 'Middle 10', 10, analyticsData);
+        html += buildTierHtml(bottom10, 'bottom', 'Bottom 10', 20, analyticsData);
+
+        container.innerHTML = html;
+    }
+
+    // Initial render sorted by views
+    const sortedByViews = [...recent30].sort((a, b) => b.views - a.views);
+    renderWithData(sortedByViews, null, 'Sorted by views · Loading analytics...');
+
+    // Async: fetch analytics and re-rank by views-per-day
+    const videoIds = recent30.map(v => v.id);
+    fetchAnalyticsData(videoIds).then(analyticsData => {
+        if (!analyticsData || Object.keys(analyticsData).length === 0) {
+            renderWithData(sortedByViews, null, 'Sorted by views');
+            return;
+        }
+        // Sort by views-per-day descending (best thumbnail effectiveness proxy)
+        const sortedByVpd = [...recent30].sort((a, b) => {
+            return getViewsPerDay(b) - getViewsPerDay(a);
+        });
+        renderWithData(sortedByVpd, analyticsData, 'Ranked by views/day');
+    }).catch(err => {
+        console.warn('[TP] Analytics fetch failed, keeping views ranking:', err.message);
+        renderWithData(sortedByViews, null, 'Sorted by views');
+    });
 }
 
 // ---- News Briefs ----

@@ -2126,9 +2126,9 @@ async function fetchAnalyticsData(videoIds) {
     if (!resp.ok) throw new Error('Analytics fetch failed');
     const data = await resp.json();
     if (data.error) throw new Error(data.error);
-    const analytics = data.analytics || {};
-    setTpCtrCache(analytics);
-    return analytics;
+    const result = { analytics: data.analytics || {}, hasCtr: !!data.hasCtr };
+    setTpCtrCache(result);
+    return result;
 }
 
 function renderThumbnailPerformance() {
@@ -2181,10 +2181,15 @@ function renderTpGrid(allVideos) {
     const cacheAge = cache ? Math.round((Date.now() - cache.timestamp) / 60000) : 0;
     const updatedText = cacheAge < 1 ? 'Updated just now' : `Updated ${cacheAge} min ago`;
 
-    function buildTierHtml(videos, tier, tierLabel, rankOffset, analyticsData) {
+    function buildTierHtml(videos, tier, tierLabel, rankOffset, analyticsData, hasCtr) {
         const hasAnalytics = analyticsData && Object.keys(analyticsData).length > 0;
         let rangeText;
-        if (hasAnalytics) {
+        if (hasCtr) {
+            const ctrs = videos.map(v => analyticsData[v.id]?.ctr).filter(x => x != null && x > 0);
+            rangeText = ctrs.length > 0
+                ? `${(Math.min(...ctrs) * 100).toFixed(1)}% – ${(Math.max(...ctrs) * 100).toFixed(1)}% CTR`
+                : '';
+        } else if (hasAnalytics) {
             const vpds = videos.map(v => getViewsPerDay(v)).filter(x => x > 0);
             rangeText = vpds.length > 0
                 ? `${formatNumber(Math.round(Math.min(...vpds)))} – ${formatNumber(Math.round(Math.max(...vpds)))} views/day`
@@ -2209,9 +2214,12 @@ function renderTpGrid(allVideos) {
             const thumbUrl = v.thumbnail || '';
             const vpd = Math.round(getViewsPerDay(v));
             const aData = hasAnalytics && analyticsData[v.id];
+            const ctrPct = aData?.ctr != null ? (aData.ctr * 100).toFixed(1) : null;
             const avgPct = aData?.avgViewPct;
             const vpdText = hasAnalytics ? `${formatNumber(vpd)} views/day` : '';
             const retText = avgPct != null ? `${avgPct.toFixed(1)}% retention` : '';
+            const ctrText = ctrPct != null ? `${ctrPct}% CTR` : '';
+            const impressionsText = aData?.impressions ? `${formatNumber(aData.impressions)} impr.` : '';
 
             html += `
                 <div class="tp-card ${tier}">
@@ -2220,8 +2228,10 @@ function renderTpGrid(allVideos) {
                     <div class="tp-card-body">
                         <div class="tp-card-title" title="${esc(v.title)}">${esc(v.title)}</div>
                         <div class="tp-card-stats">
-                            ${vpdText ? `<span class="tp-card-views ${tier}" style="font-weight:600;">${vpdText}</span>` : ''}
-                            <span class="tp-card-views ${vpdText ? '' : tier}">${formatNumber(v.views)} views</span>
+                            ${ctrText ? `<span class="tp-card-views ${tier}" style="font-weight:700;">${ctrText}</span>` : ''}
+                            ${impressionsText ? `<span class="tp-card-date">${impressionsText}</span>` : ''}
+                            ${vpdText ? `<span class="tp-card-views ${ctrText ? '' : tier}" style="font-weight:${ctrText ? '400' : '600'};">${vpdText}</span>` : ''}
+                            <span class="tp-card-views ${!vpdText && !ctrText ? tier : ''}">${formatNumber(v.views)} views</span>
                             ${retText ? `<span class="tp-card-date">${retText}</span>` : ''}
                             <span class="tp-card-date">${dateStr}</span>
                         </div>
@@ -2233,7 +2243,7 @@ function renderTpGrid(allVideos) {
         return html;
     }
 
-    function renderWithData(sorted, analyticsData, sortLabel) {
+    function renderWithData(sorted, analyticsData, hasCtr, sortLabel) {
         const top10 = sorted.slice(0, 10);
         const mid10 = sorted.slice(10, 20);
         const bottom10 = sorted.slice(20, 30);
@@ -2245,32 +2255,46 @@ function renderTpGrid(allVideos) {
             </div>
         `;
 
-        html += buildTierHtml(top10, 'top', 'Top 10', 0, analyticsData);
-        html += buildTierHtml(mid10, 'mid', 'Middle 10', 10, analyticsData);
-        html += buildTierHtml(bottom10, 'bottom', 'Bottom 10', 20, analyticsData);
+        html += buildTierHtml(top10, 'top', 'Top 10', 0, analyticsData, hasCtr);
+        html += buildTierHtml(mid10, 'mid', 'Middle 10', 10, analyticsData, hasCtr);
+        html += buildTierHtml(bottom10, 'bottom', 'Bottom 10', 20, analyticsData, hasCtr);
 
         container.innerHTML = html;
     }
 
     // Initial render sorted by views
     const sortedByViews = [...recent30].sort((a, b) => b.views - a.views);
-    renderWithData(sortedByViews, null, 'Sorted by views · Loading analytics...');
+    renderWithData(sortedByViews, null, false, 'Sorted by views · Loading analytics...');
 
-    // Async: fetch analytics and re-rank by views-per-day
+    // Async: fetch analytics and re-rank by CTR (if available) or views-per-day
     const videoIds = recent30.map(v => v.id);
-    fetchAnalyticsData(videoIds).then(analyticsData => {
+    fetchAnalyticsData(videoIds).then(result => {
+        const analyticsData = result.analytics || result;
+        const hasCtr = !!result.hasCtr;
+
         if (!analyticsData || Object.keys(analyticsData).length === 0) {
-            renderWithData(sortedByViews, null, 'Sorted by views');
+            renderWithData(sortedByViews, null, false, 'Sorted by views');
             return;
         }
-        // Sort by views-per-day descending (best thumbnail effectiveness proxy)
-        const sortedByVpd = [...recent30].sort((a, b) => {
-            return getViewsPerDay(b) - getViewsPerDay(a);
-        });
-        renderWithData(sortedByVpd, analyticsData, 'Ranked by views/day');
+
+        if (hasCtr) {
+            // Sort by actual CTR descending — the real deal
+            const sortedByCtr = [...recent30].sort((a, b) => {
+                const aCtr = analyticsData[a.id]?.ctr ?? -1;
+                const bCtr = analyticsData[b.id]?.ctr ?? -1;
+                return bCtr - aCtr;
+            });
+            renderWithData(sortedByCtr, analyticsData, true, '✨ Ranked by CTR');
+        } else {
+            // Fallback: sort by views-per-day
+            const sortedByVpd = [...recent30].sort((a, b) => {
+                return getViewsPerDay(b) - getViewsPerDay(a);
+            });
+            renderWithData(sortedByVpd, analyticsData, false, 'Ranked by views/day (CTR data pending)');
+        }
     }).catch(err => {
         console.warn('[TP] Analytics fetch failed, keeping views ranking:', err.message);
-        renderWithData(sortedByViews, null, 'Sorted by views');
+        renderWithData(sortedByViews, null, false, 'Sorted by views');
     });
 }
 

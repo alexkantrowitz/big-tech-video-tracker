@@ -595,6 +595,73 @@
             .tp-grid { grid-template-columns: 1fr; }
         }
 
+        /* ---- Sub Growth ---- */
+        .sg-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 20px; flex-wrap: wrap; gap: 12px;
+        }
+        .sg-header h2 { font-size: 18px; font-weight: 700; color: var(--navy); }
+        .sg-meta { font-size: 12px; color: var(--steel); }
+        .sg-controls { display: flex; align-items: center; gap: 10px; }
+        .sg-controls select {
+            font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 500;
+            padding: 6px 12px; border-radius: 6px; border: 1px solid var(--cloud);
+            background: var(--pure-white); color: var(--navy); cursor: pointer;
+        }
+        .sg-stats {
+            display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap;
+        }
+        .sg-stat {
+            flex: 1; min-width: 140px; text-align: center; padding: 18px 14px;
+            background: var(--pure-white); border: 1px solid var(--cloud);
+            border-radius: var(--radius); box-shadow: var(--shadow);
+        }
+        .sg-stat-num { font-size: 28px; font-weight: 700; color: var(--navy); line-height: 1; }
+        .sg-stat-num.positive { color: var(--green); }
+        .sg-stat-num.negative { color: var(--red); }
+        .sg-stat-label {
+            font-size: 11px; font-weight: 600; color: var(--steel);
+            text-transform: uppercase; letter-spacing: 0.4px; margin-top: 6px;
+        }
+        .sg-chart-wrap {
+            background: var(--pure-white); border: 1px solid var(--cloud);
+            border-radius: var(--radius); box-shadow: var(--shadow);
+            padding: 24px; margin-bottom: 24px;
+        }
+        .sg-chart-title {
+            font-size: 14px; font-weight: 700; color: var(--navy); margin-bottom: 16px;
+        }
+        .sg-chart { width: 100%; overflow-x: auto; }
+        .sg-chart svg { display: block; }
+        .sg-chart svg text { font-family: 'Inter', sans-serif; }
+        .sg-table-wrap {
+            background: var(--pure-white); border: 1px solid var(--cloud);
+            border-radius: var(--radius); box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+        .sg-table-title {
+            font-size: 14px; font-weight: 700; color: var(--navy);
+            padding: 16px 20px; border-bottom: 1px solid var(--cloud);
+        }
+        .sg-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .sg-table thead { background: var(--navy); }
+        .sg-table th {
+            padding: 10px 14px; text-align: left; font-weight: 600; font-size: 11px;
+            letter-spacing: 0.5px; text-transform: uppercase; color: var(--silver);
+        }
+        .sg-table td { padding: 9px 14px; border-bottom: 1px solid var(--cloud); color: var(--navy); }
+        .sg-table tr:hover { background: #f0f3f7; }
+        .sg-table tr:nth-child(even) { background: #fafbfc; }
+        .sg-table tr:nth-child(even):hover { background: #f0f3f7; }
+        .sg-net-pos { color: var(--green); font-weight: 600; }
+        .sg-net-neg { color: var(--red); font-weight: 600; }
+        .sg-bar {
+            display: inline-block; height: 14px; border-radius: 3px; vertical-align: middle;
+            min-width: 2px; transition: width 0.3s ease;
+        }
+        .sg-bar.gained { background: #22c55e; }
+        .sg-bar.lost { background: #ef4444; }
+
         /* ---- Toast ---- */
         .toast {
             position: fixed; bottom: 28px; right: 28px; padding: 14px 24px; border-radius: var(--radius);
@@ -675,6 +742,7 @@
     <div class="tab" data-tab="dashboard">Dashboard</div>
     <div class="tab" data-tab="videoperf">Video Performance</div>
     <div class="tab" data-tab="thumbperf">Thumbnail Performance</div>
+    <div class="tab" data-tab="subgrowth">Sub Growth</div>
     <div class="tab" data-tab="newsbriefs">News Briefs</div>
     <div class="tab" data-tab="newmonth">New Month</div>
     <div class="tab" data-tab="settings">Email Settings</div>
@@ -779,6 +847,16 @@
             <div class="vp-loading" id="tpLoading">
                 <div class="spinner"></div>
                 Loading thumbnail performance data...
+            </div>
+        </div>
+    </div>
+
+    <!-- Sub Growth Tab -->
+    <div id="subgrowth" class="tab-content">
+        <div id="sgContainer">
+            <div class="vp-loading" id="sgLoading">
+                <div class="spinner"></div>
+                Loading subscriber growth data...
             </div>
         </div>
     </div>
@@ -1617,6 +1695,7 @@ document.querySelectorAll('.tab').forEach(tab => {
         if (tab.dataset.tab === 'dashboard') renderDashboard();
         if (tab.dataset.tab === 'videoperf') renderVideoPerformance();
         if (tab.dataset.tab === 'thumbperf') renderThumbnailPerformance();
+        if (tab.dataset.tab === 'subgrowth') renderSubGrowth();
         if (tab.dataset.tab === 'newsbriefs') loadNewsBriefs();
     });
 });
@@ -2288,6 +2367,315 @@ function renderTpGrid(allVideos) {
         console.warn('[TP] Analytics fetch failed, keeping views ranking:', err.message);
         renderWithData(sortedByViews, null, false, 'Sorted by views');
     });
+}
+
+// ---- Subscriber Growth ----
+const SG_CACHE_KEY = 'bigtech_sg_cache';
+const SG_CACHE_TTL = 6 * 60 * 60 * 1000; // 6 hours
+
+let sgData = null;
+let sgDays = 90;
+
+function getSgCache() {
+    try {
+        const raw = localStorage.getItem(SG_CACHE_KEY);
+        if (!raw) return null;
+        const cached = JSON.parse(raw);
+        if (Date.now() - cached.timestamp > SG_CACHE_TTL) return null;
+        return cached;
+    } catch { return null; }
+}
+
+function setSgCache(data) {
+    localStorage.setItem(SG_CACHE_KEY, JSON.stringify({ timestamp: Date.now(), data }));
+}
+
+async function fetchSubGrowth(days) {
+    const container = document.getElementById('sgContainer');
+
+    // Check cache
+    const cached = getSgCache();
+    if (cached && cached.data && cached.data.length > 0) {
+        sgData = cached.data;
+        renderSgContent(sgData, days);
+        return;
+    }
+
+    container.innerHTML = '<div class="vp-loading"><div class="spinner"></div>Fetching subscriber growth data...</div>';
+
+    try {
+        const resp = await fetch(NB_WORKER_URL + '/sub-growth?days=' + days);
+        if (!resp.ok) throw new Error('Fetch failed: ' + resp.status);
+        const result = await resp.json();
+        if (result.error) throw new Error(result.error);
+
+        sgData = result.data || [];
+        setSgCache(sgData);
+        renderSgContent(sgData, days);
+    } catch (err) {
+        console.error('[SG] Error:', err);
+        container.innerHTML = `<div class="vp-loading" style="color:var(--red);">❌ Failed to load subscriber data: ${err.message}</div>`;
+    }
+}
+
+function renderSgContent(data, days) {
+    const container = document.getElementById('sgContainer');
+    if (!data || data.length === 0) {
+        container.innerHTML = '<div class="vp-loading">No subscriber growth data available.</div>';
+        return;
+    }
+
+    // Slice to requested days
+    const sliced = data.slice(-days);
+
+    // Compute stats
+    const totalGained = sliced.reduce((s, d) => s + d.gained, 0);
+    const totalLost = sliced.reduce((s, d) => s + d.lost, 0);
+    const totalNet = sliced.reduce((s, d) => s + d.net, 0);
+    const avgPerDay = totalNet / sliced.length;
+    const bestDay = sliced.reduce((best, d) => d.net > best.net ? d : best, sliced[0]);
+    const worstDay = sliced.reduce((worst, d) => d.net < worst.net ? d : worst, sliced[0]);
+
+    // Cache age
+    const cache = getSgCache();
+    const cacheAge = cache ? Math.round((Date.now() - cache.timestamp) / 60000) : 0;
+    const updatedText = cacheAge < 1 ? 'Updated just now' : `Updated ${cacheAge} min ago`;
+
+    let html = `
+        <div class="sg-header">
+            <h2>📈 Subscriber Growth</h2>
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div class="sg-meta">${updatedText}</div>
+                <div class="sg-controls">
+                    <select id="sgDaysSelect" onchange="changeSgDays(this.value)">
+                        <option value="30" ${days === 30 ? 'selected' : ''}>Last 30 Days</option>
+                        <option value="60" ${days === 60 ? 'selected' : ''}>Last 60 Days</option>
+                        <option value="90" ${days === 90 ? 'selected' : ''}>Last 90 Days</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="sg-stats">
+            <div class="sg-stat">
+                <div class="sg-stat-num ${totalNet >= 0 ? 'positive' : 'negative'}">${totalNet >= 0 ? '+' : ''}${totalNet.toLocaleString()}</div>
+                <div class="sg-stat-label">Net Subscribers</div>
+            </div>
+            <div class="sg-stat">
+                <div class="sg-stat-num positive">+${totalGained.toLocaleString()}</div>
+                <div class="sg-stat-label">Gained</div>
+            </div>
+            <div class="sg-stat">
+                <div class="sg-stat-num negative">-${totalLost.toLocaleString()}</div>
+                <div class="sg-stat-label">Lost</div>
+            </div>
+            <div class="sg-stat">
+                <div class="sg-stat-num ${avgPerDay >= 0 ? 'positive' : 'negative'}">${avgPerDay >= 0 ? '+' : ''}${avgPerDay.toFixed(1)}</div>
+                <div class="sg-stat-label">Avg/Day</div>
+            </div>
+        </div>
+    `;
+
+    // Build SVG chart
+    html += buildSgChart(sliced);
+
+    // Daily table
+    html += buildSgTable(sliced, bestDay, worstDay);
+
+    container.innerHTML = html;
+}
+
+function buildSgChart(data) {
+    const width = Math.max(700, data.length * 12);
+    const height = 280;
+    const padLeft = 50, padRight = 20, padTop = 20, padBottom = 40;
+    const chartW = width - padLeft - padRight;
+    const chartH = height - padTop - padBottom;
+
+    // Build cumulative net data
+    let cumulative = [];
+    let running = 0;
+    for (const d of data) {
+        running += d.net;
+        cumulative.push(running);
+    }
+
+    const minVal = Math.min(0, ...cumulative);
+    const maxVal = Math.max(0, ...cumulative);
+    const range = maxVal - minVal || 1;
+
+    function x(i) { return padLeft + (i / (data.length - 1)) * chartW; }
+    function y(val) { return padTop + chartH - ((val - minVal) / range) * chartH; }
+
+    // Build path
+    const points = cumulative.map((val, i) => `${x(i).toFixed(1)},${y(val).toFixed(1)}`);
+    const linePath = 'M' + points.join(' L');
+
+    // Area fill
+    const areaPath = linePath + ` L${x(data.length - 1).toFixed(1)},${y(0).toFixed(1)} L${x(0).toFixed(1)},${y(0).toFixed(1)} Z`;
+
+    // Y-axis labels (5 ticks)
+    const yTicks = 5;
+    let yLabels = '';
+    let gridLines = '';
+    for (let i = 0; i <= yTicks; i++) {
+        const val = minVal + (range * i / yTicks);
+        const yPos = y(val);
+        yLabels += `<text x="${padLeft - 8}" y="${yPos + 4}" text-anchor="end" fill="#8899aa" font-size="10">${val >= 0 ? '+' : ''}${Math.round(val)}</text>`;
+        gridLines += `<line x1="${padLeft}" y1="${yPos}" x2="${width - padRight}" y2="${yPos}" stroke="#e8ecf1" stroke-dasharray="3,3"/>`;
+    }
+
+    // X-axis date labels (show ~6-8 labels)
+    let xLabels = '';
+    const labelInterval = Math.max(1, Math.floor(data.length / 7));
+    for (let i = 0; i < data.length; i += labelInterval) {
+        const d = new Date(data[i].date);
+        const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        xLabels += `<text x="${x(i)}" y="${height - 6}" text-anchor="middle" fill="#8899aa" font-size="10">${label}</text>`;
+    }
+    // Always show last date
+    if (data.length > 1) {
+        const lastD = new Date(data[data.length - 1].date);
+        const lastLabel = lastD.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        xLabels += `<text x="${x(data.length - 1)}" y="${height - 6}" text-anchor="end" fill="#8899aa" font-size="10">${lastLabel}</text>`;
+    }
+
+    // Zero line
+    const zeroY = y(0);
+    const zeroLine = `<line x1="${padLeft}" y1="${zeroY}" x2="${width - padRight}" y2="${zeroY}" stroke="#8899aa" stroke-width="1"/>`;
+
+    // Determine gradient colors based on final value
+    const finalPositive = cumulative[cumulative.length - 1] >= 0;
+    const lineColor = finalPositive ? '#22c55e' : '#ef4444';
+    const fillColor = finalPositive ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.12)';
+
+    const svg = `
+        <div class="sg-chart-wrap">
+            <div class="sg-chart-title">Cumulative Net Subscriber Growth</div>
+            <div class="sg-chart">
+                <svg width="100%" viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMinYMin meet">
+                    ${gridLines}
+                    ${zeroLine}
+                    <path d="${areaPath}" fill="${fillColor}"/>
+                    <path d="${linePath}" fill="none" stroke="${lineColor}" stroke-width="2.5" stroke-linejoin="round"/>
+                    ${yLabels}
+                    ${xLabels}
+                </svg>
+            </div>
+        </div>
+    `;
+
+    // Also build a daily bar chart showing net per day
+    const maxNet = Math.max(...data.map(d => Math.abs(d.net)), 1);
+    const barH = 200;
+    const barChartW = Math.max(700, data.length * 12);
+    const barPadTop = 20, barPadBottom = 40;
+    const barAreaH = barH - barPadTop - barPadBottom;
+    const barMid = barPadTop + barAreaH / 2;
+    const barW = Math.max(2, (chartW / data.length) - 2);
+
+    let bars = '';
+    for (let i = 0; i < data.length; i++) {
+        const bx = padLeft + (i / data.length) * chartW;
+        const net = data[i].net;
+        const barHeight = (Math.abs(net) / maxNet) * (barAreaH / 2);
+        const color = net >= 0 ? '#22c55e' : '#ef4444';
+        if (net >= 0) {
+            bars += `<rect x="${bx}" y="${barMid - barHeight}" width="${barW}" height="${barHeight}" fill="${color}" rx="1" opacity="0.8"/>`;
+        } else {
+            bars += `<rect x="${bx}" y="${barMid}" width="${barW}" height="${barHeight}" fill="${color}" rx="1" opacity="0.8"/>`;
+        }
+    }
+
+    // Bar chart y-axis
+    let barYLabels = '';
+    barYLabels += `<text x="${padLeft - 8}" y="${barPadTop + 4}" text-anchor="end" fill="#8899aa" font-size="10">+${maxNet}</text>`;
+    barYLabels += `<text x="${padLeft - 8}" y="${barMid + 4}" text-anchor="end" fill="#8899aa" font-size="10">0</text>`;
+    barYLabels += `<text x="${padLeft - 8}" y="${barPadTop + barAreaH + 4}" text-anchor="end" fill="#8899aa" font-size="10">-${maxNet}</text>`;
+    const barZeroLine = `<line x1="${padLeft}" y1="${barMid}" x2="${barChartW - padRight}" y2="${barMid}" stroke="#8899aa" stroke-width="1"/>`;
+
+    // Bar chart x-axis labels
+    let barXLabels = '';
+    for (let i = 0; i < data.length; i += labelInterval) {
+        const bx = padLeft + (i / data.length) * chartW;
+        const d = new Date(data[i].date);
+        const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        barXLabels += `<text x="${bx}" y="${barH - 6}" text-anchor="middle" fill="#8899aa" font-size="10">${label}</text>`;
+    }
+
+    const barSvg = `
+        <div class="sg-chart-wrap">
+            <div class="sg-chart-title">Daily Net Subscribers</div>
+            <div class="sg-chart">
+                <svg width="100%" viewBox="0 0 ${barChartW} ${barH}" preserveAspectRatio="xMinYMin meet">
+                    ${barZeroLine}
+                    ${bars}
+                    ${barYLabels}
+                    ${barXLabels}
+                </svg>
+            </div>
+        </div>
+    `;
+
+    return svg + barSvg;
+}
+
+function buildSgTable(data, bestDay, worstDay) {
+    const reversed = [...data].reverse(); // Most recent first
+    const maxGained = Math.max(...data.map(d => d.gained), 1);
+
+    let rows = reversed.map(d => {
+        const date = new Date(d.date);
+        const dateStr = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        const netClass = d.net >= 0 ? 'sg-net-pos' : 'sg-net-neg';
+        const netStr = (d.net >= 0 ? '+' : '') + d.net;
+        const gainedBarW = Math.round((d.gained / maxGained) * 80);
+        const lostBarW = Math.round((d.lost / maxGained) * 80);
+        const isBest = d.date === bestDay.date;
+        const isWorst = d.date === worstDay.date;
+        const badge = isBest ? ' <span style="font-size:10px; background:#dcfce7; color:#15803d; padding:2px 6px; border-radius:8px; font-weight:600;">BEST</span>'
+                     : isWorst ? ' <span style="font-size:10px; background:#fee2e2; color:#b91c1c; padding:2px 6px; border-radius:8px; font-weight:600;">WORST</span>'
+                     : '';
+
+        return `<tr>
+            <td>${dateStr}${badge}</td>
+            <td>+${d.gained} <span class="sg-bar gained" style="width:${gainedBarW}px;"></span></td>
+            <td>-${d.lost} <span class="sg-bar lost" style="width:${lostBarW}px;"></span></td>
+            <td class="${netClass}">${netStr}</td>
+        </tr>`;
+    }).join('');
+
+    return `
+        <div class="sg-table-wrap">
+            <div class="sg-table-title">Daily Breakdown</div>
+            <table class="sg-table">
+                <thead><tr>
+                    <th>Date</th>
+                    <th>Gained</th>
+                    <th>Lost</th>
+                    <th>Net</th>
+                </tr></thead>
+                <tbody>${rows}</tbody>
+            </table>
+        </div>
+    `;
+}
+
+function changeSgDays(val) {
+    sgDays = parseInt(val);
+    if (sgData && sgData.length > 0) {
+        renderSgContent(sgData, sgDays);
+    } else {
+        fetchSubGrowth(sgDays);
+    }
+}
+
+function renderSubGrowth() {
+    if (sgData && sgData.length > 0) {
+        renderSgContent(sgData, sgDays);
+        return;
+    }
+    fetchSubGrowth(sgDays);
 }
 
 // ---- News Briefs ----

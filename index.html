@@ -2189,11 +2189,6 @@ function renderTpGrid(allVideos) {
             rangeText = ctrs.length > 0
                 ? `${(Math.min(...ctrs) * 100).toFixed(1)}% – ${(Math.max(...ctrs) * 100).toFixed(1)}% CTR`
                 : '';
-        } else if (hasAnalytics) {
-            const vpds = videos.map(v => getViewsPerDay(v)).filter(x => x > 0);
-            rangeText = vpds.length > 0
-                ? `${formatNumber(Math.round(Math.min(...vpds)))} – ${formatNumber(Math.round(Math.max(...vpds)))} views/day`
-                : '';
         } else {
             rangeText = videos.length > 0
                 ? `${formatNumber(videos[videos.length - 1].views)} – ${formatNumber(videos[0].views)} views`
@@ -2212,11 +2207,9 @@ function renderTpGrid(allVideos) {
             const date = new Date(v.publishedAt);
             const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
             const thumbUrl = v.thumbnail || '';
-            const vpd = Math.round(getViewsPerDay(v));
             const aData = hasAnalytics && analyticsData[v.id];
             const ctrPct = aData?.ctr != null ? (aData.ctr * 100).toFixed(1) : null;
             const avgPct = aData?.avgViewPct;
-            const vpdText = hasAnalytics ? `${formatNumber(vpd)} views/day` : '';
             const retText = avgPct != null ? `${avgPct.toFixed(1)}% retention` : '';
             const ctrText = ctrPct != null ? `${ctrPct}% CTR` : '';
             const impressionsText = aData?.impressions ? `${formatNumber(aData.impressions)} impr.` : '';
@@ -2230,8 +2223,7 @@ function renderTpGrid(allVideos) {
                         <div class="tp-card-stats">
                             ${ctrText ? `<span class="tp-card-views ${tier}" style="font-weight:700;">${ctrText}</span>` : ''}
                             ${impressionsText ? `<span class="tp-card-date">${impressionsText}</span>` : ''}
-                            ${vpdText ? `<span class="tp-card-views ${ctrText ? '' : tier}" style="font-weight:${ctrText ? '400' : '600'};">${vpdText}</span>` : ''}
-                            <span class="tp-card-views ${!vpdText && !ctrText ? tier : ''}">${formatNumber(v.views)} views</span>
+                            <span class="tp-card-views ${!ctrText ? tier : ''}">${formatNumber(v.views)} views</span>
                             ${retText ? `<span class="tp-card-date">${retText}</span>` : ''}
                             <span class="tp-card-date">${dateStr}</span>
                         </div>
@@ -2290,7 +2282,7 @@ function renderTpGrid(allVideos) {
             const sortedByVpd = [...recent30].sort((a, b) => {
                 return getViewsPerDay(b) - getViewsPerDay(a);
             });
-            renderWithData(sortedByVpd, analyticsData, false, 'Ranked by views/day (CTR data pending)');
+            renderWithData(sortedByVpd, analyticsData, false, 'Ranked by performance (CTR data pending)');
         }
     }).catch(err => {
         console.warn('[TP] Analytics fetch failed, keeping views ranking:', err.message);

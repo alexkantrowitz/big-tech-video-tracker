@@ -1818,7 +1818,7 @@ async function fetchVideoPerformance(maxItems) {
 
             data.items.forEach(v => {
                 const durationMins = parseDuration(v.contentDetails.duration);
-                if (durationMins >= 20) {
+                if (durationMins >= 35) {
                     allVideos.push({
                         id: v.id,
                         title: v.snippet.title,
@@ -1831,7 +1831,7 @@ async function fetchVideoPerformance(maxItems) {
             });
         }
 
-        console.log(`[VP] ${allVideos.length} videos are 20+ minutes`);
+        console.log(`[VP] ${allVideos.length} videos are 35+ minutes`);
 
         // Sort reverse chronological
         allVideos.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
@@ -1881,13 +1881,13 @@ function generateVpInsights(videos) {
     }
 
     // Insight 3: Duration sweet spot analysis
-    const shortLong = videos.filter(v => v.duration >= 20 && v.duration <= 35);
-    const medLong = videos.filter(v => v.duration > 35 && v.duration <= 60);
-    const extraLong = videos.filter(v => v.duration > 60);
+    const shortLong = videos.filter(v => v.duration >= 35 && v.duration <= 50);
+    const medLong = videos.filter(v => v.duration > 50 && v.duration <= 75);
+    const extraLong = videos.filter(v => v.duration > 75);
     const buckets = [
-        { label: '20–35 min', vids: shortLong },
-        { label: '35–60 min', vids: medLong },
-        { label: '60+ min', vids: extraLong }
+        { label: '35–50 min', vids: shortLong },
+        { label: '50–75 min', vids: medLong },
+        { label: '75+ min', vids: extraLong }
     ].filter(b => b.vids.length >= 2);
 
     if (buckets.length >= 2) {
@@ -1962,7 +1962,7 @@ function renderVpList(videos, page) {
     vpCurrentPage = page;
 
     if (!videos || videos.length === 0) {
-        container.innerHTML = '<div class="vp-loading">No videos over 20 minutes found.</div>';
+        container.innerHTML = '<div class="vp-loading">No videos over 35 minutes found.</div>';
         return;
     }
 
@@ -1996,7 +1996,7 @@ function renderVpList(videos, page) {
 
     let html = `
         <div class="vp-header">
-            <h2>📊 Video Performance (${videos.length} videos over 20 min)</h2>
+            <h2>📊 Video Performance (${videos.length} videos over 35 min)</h2>
             <div class="vp-meta">${updatedText} · Refreshes hourly</div>
         </div>
     `;

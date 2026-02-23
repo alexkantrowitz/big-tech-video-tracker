@@ -2180,6 +2180,8 @@ setInterval(() => {
 
 const TP_CTR_CACHE_KEY = 'bigtech_tp_ctr_cache';
 const TP_CTR_CACHE_TTL = 3600000; // 1 hour
+const TP_FULL_CACHE_KEY = 'bigtech_tp_full_cache';
+const TP_FULL_CACHE_TTL = 3600000; // 1 hour
 
 function getTpCtrCache() {
     try {
@@ -2193,6 +2195,23 @@ function getTpCtrCache() {
 
 function setTpCtrCache(data) {
     localStorage.setItem(TP_CTR_CACHE_KEY, JSON.stringify({ timestamp: Date.now(), data }));
+}
+
+function getTpFullCache(ignoreExpiry) {
+    try {
+        const raw = localStorage.getItem(TP_FULL_CACHE_KEY);
+        if (!raw) return null;
+        const cached = JSON.parse(raw);
+        if (!ignoreExpiry && Date.now() - cached.timestamp > TP_FULL_CACHE_TTL) return null;
+        return cached;
+    } catch { return null; }
+}
+
+function setTpFullCache(sortedVideos, analyticsData, hasCtr, sortLabel) {
+    localStorage.setItem(TP_FULL_CACHE_KEY, JSON.stringify({
+        timestamp: Date.now(),
+        sortedVideos, analyticsData, hasCtr, sortLabel,
+    }));
 }
 
 async function fetchAnalyticsData(videoIds) {
@@ -2211,33 +2230,139 @@ async function fetchAnalyticsData(videoIds) {
 }
 
 function renderThumbnailPerformance() {
-    // 1. VP already has videos in memory from this session
-    if (vpAllVideos && vpAllVideos.length > 0) {
-        renderTpGrid(vpAllVideos.slice(0, 30));
+    // 1. Try full cached result (videos + analytics already merged) — instant render
+    const fullCache = getTpFullCache();
+    if (fullCache) {
+        renderTpGrid(null, fullCache);
+        // Background refresh if stale
+        refreshTpInBackground();
         return;
     }
-    // 2. Fresh VP cache
-    const vpCache = getVpCache();
-    if (vpCache && vpCache.videos && vpCache.videos.length > 0) {
-        renderTpGrid(vpCache.videos.slice(0, 30));
+    // 2. Try stale full cache — still better than the two-phase flash
+    const staleFullCache = getTpFullCache(true);
+    if (staleFullCache) {
+        renderTpGrid(null, staleFullCache);
+        refreshTpInBackground();
         return;
     }
-    // 3. Stale VP cache — better than nothing when API quota is burned
-    const staleCache = getVpCache(true);
-    if (staleCache && staleCache.videos && staleCache.videos.length > 0) {
-        renderTpGrid(staleCache.videos.slice(0, 30));
-        return;
-    }
-    // 4. No data anywhere — try fetching
+    // 3. No full cache — fetch from scratch
     const container = document.getElementById('tpContainer');
-    container.innerHTML = '<div class="vp-loading"><div class="spinner"></div>Fetching video data from YouTube...</div>';
-    fetchVideoPerformance(50).then(() => { // Only fetch 50 most recent (2 API calls)
-        if (vpAllVideos && vpAllVideos.length > 0) {
-            renderTpGrid(vpAllVideos.slice(0, 30));
+    container.innerHTML = '<div class="vp-loading"><div class="spinner"></div>Fetching thumbnail performance data...</div>';
+    loadTpFromScratch();
+}
+
+function loadTpFromScratch() {
+    // Get video data
+    let videos = null;
+    if (vpAllVideos && vpAllVideos.length > 0) {
+        videos = vpAllVideos.slice(0, 30);
+    } else {
+        const vpCache = getVpCache() || getVpCache(true);
+        if (vpCache && vpCache.videos && vpCache.videos.length > 0) {
+            videos = vpCache.videos.slice(0, 30);
         }
-    }).catch(() => {
-        container.innerHTML = '<div class="vp-loading" style="color:var(--red);">❌ YouTube API quota exceeded. Try again later when the daily quota resets.</div>';
+    }
+
+    if (videos) {
+        // We have video data — go straight to fetching analytics
+        fetchTpAnalyticsAndRender(videos);
+    } else {
+        // Need to fetch videos first
+        const container = document.getElementById('tpContainer');
+        container.innerHTML = '<div class="vp-loading"><div class="spinner"></div>Fetching video data from YouTube...</div>';
+        fetchVideoPerformance(50).then(() => {
+            if (vpAllVideos && vpAllVideos.length > 0) {
+                fetchTpAnalyticsAndRender(vpAllVideos.slice(0, 30));
+            }
+        }).catch(() => {
+            container.innerHTML = '<div class="vp-loading" style="color:var(--red);">❌ YouTube API quota exceeded. Try again later.</div>';
+        });
+    }
+}
+
+function fetchTpAnalyticsAndRender(videos) {
+    const container = document.getElementById('tpContainer');
+    container.innerHTML = '<div class="vp-loading"><div class="spinner"></div>Loading analytics data...</div>';
+
+    const videoIds = videos.map(v => v.id);
+    fetchAnalyticsData(videoIds).then(result => {
+        const analyticsData = result.analytics || result;
+        const hasCtr = !!result.hasCtr;
+
+        if (!analyticsData || Object.keys(analyticsData).length === 0) {
+            const sorted = [...videos].sort((a, b) => b.views - a.views);
+            setTpFullCache(sorted, null, false, 'Sorted by views');
+            renderTpGrid(null, { sortedVideos: sorted, analyticsData: null, hasCtr: false, sortLabel: 'Sorted by views' });
+            return;
+        }
+
+        let sorted, sortLabel;
+        if (hasCtr) {
+            sorted = [...videos].sort((a, b) => {
+                const aCtr = analyticsData[a.id]?.ctr ?? -1;
+                const bCtr = analyticsData[b.id]?.ctr ?? -1;
+                return bCtr - aCtr;
+            });
+            sortLabel = '✨ Ranked by CTR';
+        } else {
+            sorted = [...videos].sort((a, b) => getViewsPerDay(b) - getViewsPerDay(a));
+            sortLabel = 'Ranked by performance';
+        }
+
+        setTpFullCache(sorted, analyticsData, hasCtr, sortLabel);
+        renderTpGrid(null, { sortedVideos: sorted, analyticsData, hasCtr, sortLabel });
+    }).catch(err => {
+        console.warn('[TP] Analytics fetch failed:', err.message);
+        const sorted = [...videos].sort((a, b) => b.views - a.views);
+        setTpFullCache(sorted, null, false, 'Sorted by views');
+        renderTpGrid(null, { sortedVideos: sorted, analyticsData: null, hasCtr: false, sortLabel: 'Sorted by views' });
     });
+}
+
+function refreshTpInBackground() {
+    // Silently refresh data without touching the UI until ready
+    let videos = null;
+    if (vpAllVideos && vpAllVideos.length > 0) {
+        videos = vpAllVideos.slice(0, 30);
+    } else {
+        const vpCache = getVpCache() || getVpCache(true);
+        if (vpCache && vpCache.videos && vpCache.videos.length > 0) {
+            videos = vpCache.videos.slice(0, 30);
+        }
+    }
+    if (!videos) return; // Can't refresh without video data
+
+    const videoIds = videos.map(v => v.id);
+    // Force-skip CTR cache to get fresh data
+    const ids = videoIds.join(',');
+    fetch(NB_WORKER_URL + '/analytics?ids=' + encodeURIComponent(ids)).then(resp => {
+        if (!resp.ok) return;
+        return resp.json();
+    }).then(data => {
+        if (!data || data.error) return;
+        const result = { analytics: data.analytics || {}, hasCtr: !!data.hasCtr };
+        setTpCtrCache(result);
+
+        const analyticsData = result.analytics;
+        const hasCtr = result.hasCtr;
+        if (!analyticsData || Object.keys(analyticsData).length === 0) return;
+
+        let sorted, sortLabel;
+        if (hasCtr) {
+            sorted = [...videos].sort((a, b) => (analyticsData[b.id]?.ctr ?? -1) - (analyticsData[a.id]?.ctr ?? -1));
+            sortLabel = '✨ Ranked by CTR';
+        } else {
+            sorted = [...videos].sort((a, b) => getViewsPerDay(b) - getViewsPerDay(a));
+            sortLabel = 'Ranked by performance';
+        }
+
+        setTpFullCache(sorted, analyticsData, hasCtr, sortLabel);
+
+        // Only update UI if thumbnail perf tab is still active
+        if (document.getElementById('thumbperf')?.classList.contains('active')) {
+            renderTpGrid(null, { sortedVideos: sorted, analyticsData, hasCtr, sortLabel });
+        }
+    }).catch(() => {}); // Silent fail for background refresh
 }
 
 function getViewsPerDay(video) {
@@ -2245,23 +2370,23 @@ function getViewsPerDay(video) {
     return video.views / days;
 }
 
-function renderTpGrid(allVideos) {
+function renderTpGrid(unused, cachedResult) {
     const container = document.getElementById('tpContainer');
+    const { sortedVideos, analyticsData, hasCtr, sortLabel } = cachedResult;
 
-    if (!allVideos || allVideos.length === 0) {
+    if (!sortedVideos || sortedVideos.length === 0) {
         container.innerHTML = '<div class="vp-loading">No videos found.</div>';
         return;
     }
 
-    const recent30 = allVideos.slice(0, 30);
+    const hasAnalytics = analyticsData && Object.keys(analyticsData).length > 0;
 
     // Cache age
-    const cache = getVpCache();
-    const cacheAge = cache ? Math.round((Date.now() - cache.timestamp) / 60000) : 0;
+    const fullCache = getTpFullCache(true);
+    const cacheAge = fullCache ? Math.round((Date.now() - fullCache.timestamp) / 60000) : 0;
     const updatedText = cacheAge < 1 ? 'Updated just now' : `Updated ${cacheAge} min ago`;
 
-    function buildTierHtml(videos, tier, tierLabel, rankOffset, analyticsData, hasCtr) {
-        const hasAnalytics = analyticsData && Object.keys(analyticsData).length > 0;
+    function buildTierHtml(videos, tier, tierLabel, rankOffset) {
         let rangeText;
         if (hasCtr) {
             const ctrs = videos.map(v => analyticsData[v.id]?.ctr).filter(x => x != null && x > 0);
@@ -2314,59 +2439,22 @@ function renderTpGrid(allVideos) {
         return html;
     }
 
-    function renderWithData(sorted, analyticsData, hasCtr, sortLabel) {
-        const top10 = sorted.slice(0, 10);
-        const mid10 = sorted.slice(10, 20);
-        const bottom10 = sorted.slice(20, 30);
+    const top10 = sortedVideos.slice(0, 10);
+    const mid10 = sortedVideos.slice(10, 20);
+    const bottom10 = sortedVideos.slice(20, 30);
 
-        let html = `
-            <div class="tp-header">
-                <h2>🖼️ Thumbnail Performance (Last 30 Videos)</h2>
-                <div class="tp-meta">${updatedText} · ${sortLabel}</div>
-            </div>
-        `;
+    let html = `
+        <div class="tp-header">
+            <h2>🖼️ Thumbnail Performance (Last 30 Videos)</h2>
+            <div class="tp-meta">${updatedText} · ${sortLabel}</div>
+        </div>
+    `;
 
-        html += buildTierHtml(top10, 'top', 'Top 10', 0, analyticsData, hasCtr);
-        html += buildTierHtml(mid10, 'mid', 'Middle 10', 10, analyticsData, hasCtr);
-        html += buildTierHtml(bottom10, 'bottom', 'Bottom 10', 20, analyticsData, hasCtr);
+    html += buildTierHtml(top10, 'top', 'Top 10', 0);
+    html += buildTierHtml(mid10, 'mid', 'Middle 10', 10);
+    html += buildTierHtml(bottom10, 'bottom', 'Bottom 10', 20);
 
-        container.innerHTML = html;
-    }
-
-    // Initial render sorted by views
-    const sortedByViews = [...recent30].sort((a, b) => b.views - a.views);
-    renderWithData(sortedByViews, null, false, 'Sorted by views · Loading analytics...');
-
-    // Async: fetch analytics and re-rank by CTR (if available) or views-per-day
-    const videoIds = recent30.map(v => v.id);
-    fetchAnalyticsData(videoIds).then(result => {
-        const analyticsData = result.analytics || result;
-        const hasCtr = !!result.hasCtr;
-
-        if (!analyticsData || Object.keys(analyticsData).length === 0) {
-            renderWithData(sortedByViews, null, false, 'Sorted by views');
-            return;
-        }
-
-        if (hasCtr) {
-            // Sort by actual CTR descending — the real deal
-            const sortedByCtr = [...recent30].sort((a, b) => {
-                const aCtr = analyticsData[a.id]?.ctr ?? -1;
-                const bCtr = analyticsData[b.id]?.ctr ?? -1;
-                return bCtr - aCtr;
-            });
-            renderWithData(sortedByCtr, analyticsData, true, '✨ Ranked by CTR');
-        } else {
-            // Fallback: sort by views-per-day
-            const sortedByVpd = [...recent30].sort((a, b) => {
-                return getViewsPerDay(b) - getViewsPerDay(a);
-            });
-            renderWithData(sortedByVpd, analyticsData, false, 'Ranked by performance (CTR data pending)');
-        }
-    }).catch(err => {
-        console.warn('[TP] Analytics fetch failed, keeping views ranking:', err.message);
-        renderWithData(sortedByViews, null, false, 'Sorted by views');
-    });
+    container.innerHTML = html;
 }
 
 // ---- Subscriber Growth ----

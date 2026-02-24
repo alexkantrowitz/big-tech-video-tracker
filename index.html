@@ -2151,28 +2151,35 @@ function vpGoPage(page) {
 }
 
 function renderVideoPerformance() {
+    // 1. Show cached data instantly if available
     const cache = getVpCache();
     if (cache && cache.videos) {
         renderVpList(cache.videos, vpCurrentPage);
+        // Background refresh — fetch fresh data without blocking the UI
+        refreshVpInBackground();
         return;
     }
-    // Try stale cache — way better than a 403 error
+    // 2. Stale cache — show it, then refresh
     const staleCache = getVpCache(true);
     if (staleCache && staleCache.videos) {
         renderVpList(staleCache.videos, vpCurrentPage);
+        refreshVpInBackground();
         return;
     }
+    // 3. No cache at all — full blocking fetch
     vpCurrentPage = 0;
-    fetchVideoPerformance().catch(() => {}); // Error already rendered in VP container
+    fetchVideoPerformance().catch(() => {});
 }
 
-// Hourly auto-refresh for video performance
-setInterval(() => {
-    // Only re-fetch if the tab is currently active (cache will be overwritten on success)
-    if (document.getElementById('videoperf')?.classList.contains('active')) {
-        fetchVideoPerformance().catch(() => {});
-    }
-}, VP_CACHE_TTL);
+function refreshVpInBackground() {
+    fetchVideoPerformance().then(() => {
+        // fetchVideoPerformance already updates vpAllVideos, cache, and renders
+        // Also refresh the TP full cache since it depends on VP data
+        if (document.getElementById('thumbperf')?.classList.contains('active')) {
+            refreshTpInBackground();
+        }
+    }).catch(() => {}); // Silent fail
+}
 
 // ---- Thumbnail Performance ----
 // Shares data with Video Performance tab — no separate API calls needed.
@@ -2320,48 +2327,41 @@ function fetchTpAnalyticsAndRender(videos) {
 }
 
 function refreshTpInBackground() {
-    // Silently refresh data without touching the UI until ready
-    let videos = null;
-    if (vpAllVideos && vpAllVideos.length > 0) {
-        videos = vpAllVideos.slice(0, 30);
-    } else {
-        const vpCache = getVpCache() || getVpCache(true);
-        if (vpCache && vpCache.videos && vpCache.videos.length > 0) {
-            videos = vpCache.videos.slice(0, 30);
-        }
-    }
-    if (!videos) return; // Can't refresh without video data
+    // Step 1: Re-fetch video list (also refreshes VP cache)
+    fetchVideoPerformance(50).then(() => {
+        const videos = vpAllVideos && vpAllVideos.length > 0 ? vpAllVideos.slice(0, 30) : null;
+        if (!videos) return;
 
-    const videoIds = videos.map(v => v.id);
-    // Force-skip CTR cache to get fresh data
-    const ids = videoIds.join(',');
-    fetch(NB_WORKER_URL + '/analytics?ids=' + encodeURIComponent(ids)).then(resp => {
-        if (!resp.ok) return;
-        return resp.json();
-    }).then(data => {
-        if (!data || data.error) return;
-        const result = { analytics: data.analytics || {}, hasCtr: !!data.hasCtr };
-        setTpCtrCache(result);
+        // Step 2: Fetch fresh analytics (bypass CTR cache)
+        const ids = videos.map(v => v.id).join(',');
+        return fetch(NB_WORKER_URL + '/analytics?ids=' + encodeURIComponent(ids)).then(resp => {
+            if (!resp.ok) return;
+            return resp.json();
+        }).then(data => {
+            if (!data || data.error) return;
+            const result = { analytics: data.analytics || {}, hasCtr: !!data.hasCtr };
+            setTpCtrCache(result);
 
-        const analyticsData = result.analytics;
-        const hasCtr = result.hasCtr;
-        if (!analyticsData || Object.keys(analyticsData).length === 0) return;
+            const analyticsData = result.analytics;
+            const hasCtr = result.hasCtr;
+            if (!analyticsData || Object.keys(analyticsData).length === 0) return;
 
-        let sorted, sortLabel;
-        if (hasCtr) {
-            sorted = [...videos].sort((a, b) => (analyticsData[b.id]?.ctr ?? -1) - (analyticsData[a.id]?.ctr ?? -1));
-            sortLabel = '✨ Ranked by CTR';
-        } else {
-            sorted = [...videos].sort((a, b) => getViewsPerDay(b) - getViewsPerDay(a));
-            sortLabel = 'Ranked by performance';
-        }
+            let sorted, sortLabel;
+            if (hasCtr) {
+                sorted = [...videos].sort((a, b) => (analyticsData[b.id]?.ctr ?? -1) - (analyticsData[a.id]?.ctr ?? -1));
+                sortLabel = '✨ Ranked by CTR';
+            } else {
+                sorted = [...videos].sort((a, b) => getViewsPerDay(b) - getViewsPerDay(a));
+                sortLabel = 'Ranked by performance';
+            }
 
-        setTpFullCache(sorted, analyticsData, hasCtr, sortLabel);
+            setTpFullCache(sorted, analyticsData, hasCtr, sortLabel);
 
-        // Only update UI if thumbnail perf tab is still active
-        if (document.getElementById('thumbperf')?.classList.contains('active')) {
-            renderTpGrid(null, { sortedVideos: sorted, analyticsData, hasCtr, sortLabel });
-        }
+            // Only update UI if thumbnail perf tab is still active
+            if (document.getElementById('thumbperf')?.classList.contains('active')) {
+                renderTpGrid(null, { sortedVideos: sorted, analyticsData, hasCtr, sortLabel });
+            }
+        });
     }).catch(() => {}); // Silent fail for background refresh
 }
 

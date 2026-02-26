@@ -2221,10 +2221,12 @@ function setTpFullCache(sortedVideos, analyticsData, hasCtr, sortLabel) {
     }));
 }
 
-async function fetchAnalyticsData(videoIds) {
+async function fetchAnalyticsData(videoIds, skipCache) {
     // Check cache first
-    const cached = getTpCtrCache();
-    if (cached) return cached;
+    if (!skipCache) {
+        const cached = getTpCtrCache();
+        if (cached) return cached;
+    }
 
     const ids = videoIds.join(',');
     const resp = await fetch(NB_WORKER_URL + '/analytics?ids=' + encodeURIComponent(ids));
@@ -2237,22 +2239,19 @@ async function fetchAnalyticsData(videoIds) {
 }
 
 function renderThumbnailPerformance() {
-    // 1. Try full cached result (videos + analytics already merged) — instant render
+    // 1. Try full cached result that has analytics data — instant render
     const fullCache = getTpFullCache();
-    if (fullCache) {
+    if (fullCache && fullCache.analyticsData && Object.keys(fullCache.analyticsData).length > 0) {
         renderTpGrid(null, fullCache);
-        // Background refresh if stale
-        refreshTpInBackground();
         return;
     }
-    // 2. Try stale full cache — still better than the two-phase flash
+    // 2. Try stale full cache with analytics
     const staleFullCache = getTpFullCache(true);
-    if (staleFullCache) {
+    if (staleFullCache && staleFullCache.analyticsData && Object.keys(staleFullCache.analyticsData).length > 0) {
         renderTpGrid(null, staleFullCache);
-        refreshTpInBackground();
         return;
     }
-    // 3. No full cache — fetch from scratch
+    // 3. No cache with analytics — fetch from scratch (show spinner, get the real data)
     const container = document.getElementById('tpContainer');
     container.innerHTML = '<div class="vp-loading"><div class="spinner"></div>Fetching thumbnail performance data...</div>';
     loadTpFromScratch();
@@ -2292,7 +2291,7 @@ function fetchTpAnalyticsAndRender(videos) {
     container.innerHTML = '<div class="vp-loading"><div class="spinner"></div>Loading analytics data...</div>';
 
     const videoIds = videos.map(v => v.id);
-    fetchAnalyticsData(videoIds).then(result => {
+    fetchAnalyticsData(videoIds, true).then(result => {
         const analyticsData = result.analytics || result;
         const hasCtr = !!result.hasCtr;
 

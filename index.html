@@ -486,6 +486,23 @@
             transition: border-color 0.2s ease;
         }
         .nb-source a:hover { border-bottom-color: var(--blue); }
+        .nb-add-link {
+            display: flex; gap: 10px; margin-bottom: 16px;
+            padding: 14px 16px; background: var(--pure-white); border: 2px dashed var(--cloud);
+            border-radius: var(--radius); align-items: center; transition: border-color 0.2s;
+        }
+        .nb-add-link:focus-within { border-color: var(--accent); }
+        .nb-add-link input {
+            flex: 1; border: none; outline: none; font-size: 14px; font-family: 'Inter', sans-serif;
+            color: var(--navy); background: transparent;
+        }
+        .nb-add-link input::placeholder { color: var(--silver); }
+        .nb-add-link .btn { flex-shrink: 0; }
+        .nb-added-tag {
+            display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px;
+            font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+            background: #dbeafe; color: #1d4ed8; margin-left: 8px;
+        }
         .nb-date {
             font-size: 11px; color: var(--silver); margin-left: 8px; font-weight: 400;
         }
@@ -3164,6 +3181,7 @@ const NB_CACHE_KEY = 'bigtech_nb_cache';
 const NB_CACHE_TTL = 3600000; // 1 hour
 const NB_SEND_KEY = 'bigtech_nb_last_send';
 const NB_AUTO_KEY = 'bigtech_nb_auto_email';
+const NB_MANUAL_KEY = 'bigtech_nb_manual';
 const NB_WORKER_URL = 'https://news-briefs-rewriter.alex-kantrowitz.workers.dev';
 const NB_CORS_PROXIES = [
     url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
@@ -3385,7 +3403,7 @@ async function loadNewsBriefs() {
     if (nbWeekOffset === 0) {
         const cache = getNbCache();
         if (cache && cache.stories && cache.stories.length > 0) {
-            renderNewsBriefs(cache.stories);
+            nbRenderMerged(cache.stories);
             return;
         }
     }
@@ -3399,7 +3417,7 @@ async function loadNewsBriefs() {
             if (parsed.stories && parsed.stories.length > 0) {
                 // Restore Date objects
                 parsed.stories.forEach(s => s.pubDate = new Date(s.pubDate));
-                renderNewsBriefs(parsed.stories);
+                nbRenderMerged(parsed.stories);
                 return;
             }
         }
@@ -3425,11 +3443,17 @@ async function loadNewsBriefs() {
         // Also save per-week
         localStorage.setItem(`bigtech_nb_week_${nbWeekOffset}`, JSON.stringify({ stories: top10 }));
 
-        renderNewsBriefs(top10);
+        nbRenderMerged(top10);
     } catch (err) {
         console.error('[NB] Fetch error:', err);
         container.innerHTML = `<div class="vp-loading" style="color:var(--red);">Failed to load stories: ${err.message}</div>`;
     }
+}
+
+function nbRenderMerged(autoStories) {
+    const manual = getNbManualLinks().map(m => ({ ...m, pubDate: new Date(m.pubDate) }));
+    const combined = [...manual, ...autoStories];
+    renderNewsBriefs(combined);
 }
 
 function renderNewsBriefs(stories) {
@@ -3449,6 +3473,11 @@ function renderNewsBriefs(stories) {
                 <button class="nb-week-btn" onclick="nbChangeWeek(1)" ${isCurrentWeek ? 'disabled' : ''}>›</button>
             </div>
         </div>
+        <div class="nb-add-link">
+            <span style="font-size:18px;">🔗</span>
+            <input type="text" id="nbLinkInput" placeholder="Paste a link to add it to the briefs..." onkeydown="if(event.key==='Enter')nbAddLink()">
+            <button class="btn btn-primary" onclick="nbAddLink()" id="nbAddBtn">+ Add</button>
+        </div>
         <div class="nb-actions">
             <button class="btn btn-primary" onclick="nbRefresh()">🔄 Refresh</button>
             <button class="btn btn-accent" onclick="nbCopyForNewsletter()" ${stories.length === 0 ? 'disabled' : ''}>📋 Copy for Newsletter</button>
@@ -3463,11 +3492,13 @@ function renderNewsBriefs(stories) {
         html += '<div class="nb-list">';
         stories.forEach((s, i) => {
             const dateStr = s.pubDate ? new Date(s.pubDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : '';
+            const addedBadge = s.manual ? '<span class="nb-added-tag">added</span>' : '';
+            const removeBtn = s.manual ? ` <span style="cursor:pointer;color:var(--silver);font-size:12px;margin-left:6px;" onclick="nbRemoveManual(${i})" title="Remove">✕</span>` : '';
             html += `
                 <div class="nb-item">
                     <div class="nb-rank">${i + 1}</div>
                     <div class="nb-content">
-                        <div class="nb-headline" ${s.originalTitle ? `title="${esc(s.originalTitle)}"` : ''}>${esc(s.title)}</div>
+                        <div class="nb-headline" ${s.originalTitle ? `title="${esc(s.originalTitle)}"` : ''}>${esc(s.title)}${addedBadge}${removeBtn}</div>
                         <span class="nb-source">[<a href="${esc(s.link)}" target="_blank" rel="noopener">${esc(s.source)}</a>]</span>
                         <span class="nb-date">${dateStr}</span>
                     </div>
@@ -3506,23 +3537,27 @@ function nbRefresh() {
 
 function nbCopyForNewsletter() {
     const savedKey = nbWeekOffset === 0 ? NB_CACHE_KEY : `bigtech_nb_week_${nbWeekOffset}`;
-    let stories = [];
+    let autoStories = [];
 
     try {
         const raw = localStorage.getItem(savedKey);
         if (raw) {
             const parsed = JSON.parse(raw);
-            stories = parsed.stories || parsed;
+            autoStories = parsed.stories || parsed;
         }
     } catch (e) {}
 
     // Also check direct cache
-    if (stories.length === 0) {
+    if (autoStories.length === 0) {
         try {
             const raw = localStorage.getItem(NB_CACHE_KEY);
-            if (raw) stories = JSON.parse(raw).stories || [];
+            if (raw) autoStories = JSON.parse(raw).stories || [];
         } catch (e) {}
     }
+
+    // Merge manual links at top
+    const manual = getNbManualLinks();
+    const stories = [...manual, ...autoStories];
 
     if (stories.length === 0) {
         toast('No stories to copy', 'error');
@@ -3559,18 +3594,23 @@ function nbToggleAutoEmail(enabled) {
 }
 
 function nbGetStoriesForEmail() {
-    // Get current week stories
+    // Get current week auto stories
+    let autoStories = [];
     const cache = getNbCache();
-    if (cache && cache.stories && cache.stories.length > 0) return cache.stories;
-
-    const saved = localStorage.getItem('bigtech_nb_week_0');
-    if (saved) {
-        try {
-            const parsed = JSON.parse(saved);
-            if (parsed.stories && parsed.stories.length > 0) return parsed.stories;
-        } catch (e) {}
+    if (cache && cache.stories && cache.stories.length > 0) {
+        autoStories = cache.stories;
+    } else {
+        const saved = localStorage.getItem('bigtech_nb_week_0');
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                if (parsed.stories && parsed.stories.length > 0) autoStories = parsed.stories;
+            } catch (e) {}
+        }
     }
-    return [];
+    // Merge manual links at top
+    const manual = getNbManualLinks();
+    return [...manual, ...autoStories];
 }
 
 function nbBuildEmailHtml(stories) {
@@ -3658,6 +3698,109 @@ setInterval(() => {
         }
     }
 }, 900000); // Every 15 minutes
+
+// ---- News Briefs: Manual Link Add ----
+function getNbManualLinks() {
+    try {
+        const raw = localStorage.getItem(NB_MANUAL_KEY);
+        return raw ? JSON.parse(raw) : [];
+    } catch (e) { return []; }
+}
+
+function saveNbManualLinks(links) {
+    localStorage.setItem(NB_MANUAL_KEY, JSON.stringify(links));
+}
+
+async function nbAddLink() {
+    const input = document.getElementById('nbLinkInput');
+    const btn = document.getElementById('nbAddBtn');
+    let url = input.value.trim();
+    if (!url) return;
+
+    // Auto-add https:// if missing
+    if (!url.match(/^https?:\/\//i)) url = 'https://' + url;
+
+    btn.textContent = '⏳';
+    btn.disabled = true;
+
+    try {
+        const resp = await fetch(NB_WORKER_URL + '/fetch-link?url=' + encodeURIComponent(url));
+        const data = await resp.json();
+
+        if (data.error) {
+            toast('Failed to fetch link: ' + data.error, 'error');
+            return;
+        }
+
+        const story = {
+            title: data.title || url,
+            link: data.link || url,
+            source: data.source || new URL(url).hostname.replace('www.', ''),
+            pubDate: new Date().toISOString(),
+            manual: true,
+        };
+
+        // Save to manual links store
+        const manual = getNbManualLinks();
+        // Dedupe by link
+        const exists = manual.some(m => m.link === story.link);
+        if (!exists) {
+            manual.unshift(story);
+            saveNbManualLinks(manual);
+        }
+
+        input.value = '';
+        toast('Link added!', 'success');
+
+        // Re-render with the manual links merged in
+        nbRenderWithManual();
+    } catch (err) {
+        toast('Error: ' + err.message, 'error');
+    } finally {
+        btn.textContent = '+ Add';
+        btn.disabled = false;
+    }
+}
+
+function nbRemoveManual(indexInCombined) {
+    // Get current combined list to find which manual link to remove
+    const cache = nbGetCurrentStories();
+    const manual = getNbManualLinks();
+    const combined = [...manual, ...cache];
+    const story = combined[indexInCombined];
+    if (story && story.manual) {
+        const idx = manual.findIndex(m => m.link === story.link);
+        if (idx >= 0) {
+            manual.splice(idx, 1);
+            saveNbManualLinks(manual);
+            nbRenderWithManual();
+        }
+    }
+}
+
+function nbGetCurrentStories() {
+    // Get the auto-fetched stories for the current week
+    if (nbWeekOffset === 0) {
+        const cache = getNbCache();
+        if (cache && cache.stories) return cache.stories;
+    }
+    try {
+        const saved = localStorage.getItem(`bigtech_nb_week_${nbWeekOffset}`);
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            if (parsed.stories) {
+                parsed.stories.forEach(s => s.pubDate = new Date(s.pubDate));
+                return parsed.stories;
+            }
+        }
+    } catch (e) {}
+    return [];
+}
+
+function nbRenderWithManual() {
+    const autoStories = nbGetCurrentStories();
+    nbRenderMerged(autoStories);
+}
 
 // ---- Copy Shareable Link ----
 // ---- Toast ----

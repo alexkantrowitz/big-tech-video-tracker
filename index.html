@@ -662,6 +662,85 @@
         .sg-bar.gained { background: #22c55e; }
         .sg-bar.lost { background: #ef4444; }
 
+        /* ---- Podcast Analytics ---- */
+        .pod-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 20px; flex-wrap: wrap; gap: 12px;
+        }
+        .pod-header h2 { font-size: 18px; font-weight: 700; color: var(--navy); }
+        .pod-meta { font-size: 12px; color: var(--steel); }
+        .pod-stats {
+            display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap;
+        }
+        .pod-stat {
+            flex: 1; min-width: 130px; text-align: center; padding: 18px 14px;
+            background: var(--pure-white); border: 1px solid var(--cloud);
+            border-radius: var(--radius); box-shadow: var(--shadow);
+        }
+        .pod-stat-num { font-size: 28px; font-weight: 700; color: var(--navy); line-height: 1; }
+        .pod-stat-label {
+            font-size: 11px; font-weight: 600; color: var(--steel);
+            text-transform: uppercase; letter-spacing: 0.4px; margin-top: 6px;
+        }
+        .pod-chart-wrap {
+            background: var(--pure-white); border: 1px solid var(--cloud);
+            border-radius: var(--radius); box-shadow: var(--shadow);
+            padding: 24px; margin-bottom: 24px;
+        }
+        .pod-chart-title {
+            font-size: 14px; font-weight: 700; color: var(--navy); margin-bottom: 16px;
+        }
+        .pod-chart { width: 100%; overflow-x: auto; }
+        .pod-chart svg { display: block; }
+        .pod-chart svg text { font-family: 'Inter', sans-serif; }
+        .pod-top-list {
+            background: var(--pure-white); border: 1px solid var(--cloud);
+            border-radius: var(--radius); box-shadow: var(--shadow);
+            overflow: hidden; margin-bottom: 24px;
+        }
+        .pod-top-title {
+            font-size: 14px; font-weight: 700; color: var(--navy);
+            padding: 16px 20px; border-bottom: 1px solid var(--cloud);
+        }
+        .pod-ep {
+            display: flex; align-items: center; gap: 14px;
+            padding: 12px 20px; border-bottom: 1px solid var(--cloud);
+            transition: background 0.15s;
+        }
+        .pod-ep:last-child { border-bottom: none; }
+        .pod-ep:hover { background: #f0f3f7; }
+        .pod-ep-rank {
+            width: 28px; height: 28px; border-radius: 50%;
+            background: var(--navy); color: var(--pure-white);
+            font-size: 12px; font-weight: 700; display: flex;
+            align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .pod-ep-info { flex: 1; min-width: 0; }
+        .pod-ep-title {
+            font-size: 13px; font-weight: 600; color: var(--navy);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .pod-ep-date { font-size: 11px; color: var(--steel); margin-top: 2px; }
+        .pod-ep-stats { text-align: right; flex-shrink: 0; }
+        .pod-ep-total { font-size: 15px; font-weight: 700; color: var(--navy); }
+        .pod-ep-breakdown { font-size: 11px; color: var(--steel); margin-top: 2px; }
+        .pod-ep-bar-wrap {
+            width: 100px; height: 8px; background: var(--cloud);
+            border-radius: 4px; overflow: hidden; flex-shrink: 0;
+        }
+        .pod-ep-bar {
+            height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--accent), var(--accent-light));
+            transition: width 0.3s ease;
+        }
+        .pod-trend-up { color: var(--green); }
+        .pod-trend-down { color: var(--red); }
+        .pod-controls { display: flex; align-items: center; gap: 10px; }
+        .pod-controls select {
+            font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 500;
+            padding: 6px 12px; border-radius: 6px; border: 1px solid var(--cloud);
+            background: var(--pure-white); color: var(--navy); cursor: pointer;
+        }
+
         /* ---- Toast ---- */
         .toast {
             position: fixed; bottom: 28px; right: 28px; padding: 14px 24px; border-radius: var(--radius);
@@ -743,6 +822,7 @@
     <div class="tab" data-tab="videoperf">Video Performance</div>
     <div class="tab" data-tab="thumbperf">Thumbnail Performance</div>
     <div class="tab" data-tab="subgrowth">Sub Growth</div>
+    <div class="tab" data-tab="podcast">Podcast</div>
     <div class="tab" data-tab="newsbriefs">News Briefs</div>
     <div class="tab" data-tab="newmonth">New Month</div>
     <div class="tab" data-tab="settings">Email Settings</div>
@@ -857,6 +937,16 @@
             <div class="vp-loading" id="sgLoading">
                 <div class="spinner"></div>
                 Loading subscriber growth data...
+            </div>
+        </div>
+    </div>
+
+    <!-- Podcast Analytics Tab -->
+    <div id="podcast" class="tab-content">
+        <div id="podContainer">
+            <div class="vp-loading" id="podLoading">
+                <div class="spinner"></div>
+                Loading podcast analytics...
             </div>
         </div>
     </div>
@@ -1696,6 +1786,7 @@ document.querySelectorAll('.tab').forEach(tab => {
         if (tab.dataset.tab === 'videoperf') renderVideoPerformance();
         if (tab.dataset.tab === 'thumbperf') renderThumbnailPerformance();
         if (tab.dataset.tab === 'subgrowth') renderSubGrowth();
+        if (tab.dataset.tab === 'podcast') renderPodcast();
         if (tab.dataset.tab === 'newsbriefs') loadNewsBriefs();
     });
 });
@@ -2763,6 +2854,309 @@ function renderSubGrowth() {
         return;
     }
     fetchSubGrowth(sgDays);
+}
+
+// ---- Podcast Analytics ----
+const POD_CACHE_KEY = 'bigtech_pod_cache';
+const POD_CACHE_TTL = 6 * 60 * 60 * 1000; // 6 hours
+let podData = null;
+let podTimeRange = 'all';
+
+function getPodCache() {
+    try {
+        const raw = localStorage.getItem(POD_CACHE_KEY);
+        if (!raw) return null;
+        const cached = JSON.parse(raw);
+        if (Date.now() - cached.timestamp > POD_CACHE_TTL) return null;
+        return cached;
+    } catch { return null; }
+}
+
+function setPodCache(episodes) {
+    localStorage.setItem(POD_CACHE_KEY, JSON.stringify({ timestamp: Date.now(), episodes }));
+}
+
+async function fetchPodcastData() {
+    const container = document.getElementById('podContainer');
+
+    const cached = getPodCache();
+    if (cached && cached.episodes && cached.episodes.length > 0) {
+        podData = cached.episodes;
+        renderPodContent(podData, podTimeRange);
+        return;
+    }
+
+    container.innerHTML = '<div class="vp-loading"><div class="spinner"></div>Loading podcast analytics...</div>';
+
+    try {
+        const resp = await fetch(NB_WORKER_URL + '/podcast');
+        if (!resp.ok) throw new Error('Fetch failed: ' + resp.status);
+        const result = await resp.json();
+        if (result.error) throw new Error(result.error);
+
+        podData = result.episodes || [];
+        setPodCache(podData);
+        renderPodContent(podData, podTimeRange);
+    } catch (err) {
+        console.error('[Pod] Error:', err);
+        container.innerHTML = `<div class="vp-loading" style="color:var(--red);">❌ Failed to load podcast data: ${err.message}</div>`;
+    }
+}
+
+function filterPodByRange(episodes, range) {
+    if (range === 'all') return episodes;
+    const now = new Date();
+    let cutoff;
+    if (range === '2026') cutoff = new Date('2026-01-01');
+    else if (range === '2025') cutoff = new Date('2025-01-01');
+    else if (range === '2024') cutoff = new Date('2024-01-01');
+    else if (range === '12m') cutoff = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+    else if (range === '6m') cutoff = new Date(now.getTime() - 182 * 24 * 60 * 60 * 1000);
+    else if (range === '3m') cutoff = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+    else return episodes;
+
+    const endCutoff = (range === '2025') ? new Date('2026-01-01') : (range === '2024') ? new Date('2025-01-01') : null;
+
+    return episodes.filter(ep => {
+        const d = new Date(ep.published);
+        if (d < cutoff) return false;
+        if (endCutoff && d >= endCutoff) return false;
+        return true;
+    });
+}
+
+function renderPodContent(allEpisodes, range) {
+    const container = document.getElementById('podContainer');
+    const episodes = filterPodByRange(allEpisodes, range);
+
+    if (!episodes || episodes.length === 0) {
+        container.innerHTML = '<div class="vp-loading">No podcast episodes found for this period.</div>';
+        return;
+    }
+
+    const totalDownloads = episodes.reduce((s, e) => s + e.total, 0);
+    const avgPerEpisode = Math.round(totalDownloads / episodes.length);
+    const totalStreams = episodes.reduce((s, e) => s + e.streams, 0);
+    const totalDls = episodes.reduce((s, e) => s + e.downloads, 0);
+    const streamPct = totalDownloads > 0 ? Math.round((totalStreams / totalDownloads) * 100) : 0;
+
+    // Recent trend: last 10 vs previous 10
+    const recent10 = episodes.slice(0, Math.min(10, episodes.length));
+    const prev10 = episodes.slice(10, Math.min(20, episodes.length));
+    const recentAvg = recent10.reduce((s, e) => s + e.total, 0) / recent10.length;
+    const prevAvg = prev10.length > 0 ? prev10.reduce((s, e) => s + e.total, 0) / prev10.length : recentAvg;
+    const trendPct = prevAvg > 0 ? Math.round(((recentAvg - prevAvg) / prevAvg) * 100) : 0;
+
+    const rangeLabel = range === 'all' ? 'All Time' : range === '12m' ? 'Last 12 Months' : range === '6m' ? 'Last 6 Months' : range === '3m' ? 'Last 3 Months' : range;
+
+    let html = `
+        <div class="pod-header">
+            <h2>🎙️ Podcast Analytics (${episodes.length} episodes)</h2>
+            <div style="display:flex;align-items:center;gap:12px;">
+                <div class="pod-meta">${rangeLabel} · ${formatNumber(totalDownloads)} total listens</div>
+                <div class="pod-controls">
+                    <select id="podRange" onchange="changePodRange(this.value)">
+                        <option value="all" ${range==='all'?'selected':''}>All Time</option>
+                        <option value="2026" ${range==='2026'?'selected':''}>2026</option>
+                        <option value="2025" ${range==='2025'?'selected':''}>2025</option>
+                        <option value="2024" ${range==='2024'?'selected':''}>2024</option>
+                        <option value="12m" ${range==='12m'?'selected':''}>Last 12 Months</option>
+                        <option value="6m" ${range==='6m'?'selected':''}>Last 6 Months</option>
+                        <option value="3m" ${range==='3m'?'selected':''}>Last 3 Months</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="pod-stats">
+            <div class="pod-stat">
+                <div class="pod-stat-num">${formatNumber(totalDownloads)}</div>
+                <div class="pod-stat-label">Total Listens</div>
+            </div>
+            <div class="pod-stat">
+                <div class="pod-stat-num">${formatNumber(avgPerEpisode)}</div>
+                <div class="pod-stat-label">Avg Per Episode</div>
+            </div>
+            <div class="pod-stat">
+                <div class="pod-stat-num">${streamPct}%</div>
+                <div class="pod-stat-label">Streaming</div>
+            </div>
+            <div class="pod-stat">
+                <div class="pod-stat-num ${trendPct >= 0 ? 'pod-trend-up' : 'pod-trend-down'}">${trendPct >= 0 ? '+' : ''}${trendPct}%</div>
+                <div class="pod-stat-label">Recent Trend</div>
+            </div>
+        </div>
+    `;
+
+    // Episode performance chart (last 50 episodes, bar chart)
+    html += buildPodChart(episodes);
+
+    // Top 15 episodes
+    html += buildPodTopList(episodes);
+
+    // Recent episodes list
+    html += buildPodRecentList(episodes);
+
+    container.innerHTML = html;
+}
+
+function buildPodChart(episodes) {
+    // Show up to last 50 episodes chronologically
+    const chrono = [...episodes].reverse().slice(-50);
+    const maxTotal = Math.max(...chrono.map(e => e.total), 1);
+
+    const width = Math.max(700, chrono.length * 16);
+    const height = 260;
+    const padLeft = 55, padRight = 20, padTop = 20, padBottom = 50;
+    const chartW = width - padLeft - padRight;
+    const chartH = height - padTop - padBottom;
+    const barW = Math.max(4, (chartW / chrono.length) - 3);
+
+    const avg = chrono.reduce((s, e) => s + e.total, 0) / chrono.length;
+
+    let bars = '';
+    let xLabels = '';
+    const labelInterval = Math.max(1, Math.floor(chrono.length / 8));
+
+    chrono.forEach((ep, i) => {
+        const bx = padLeft + (i / chrono.length) * chartW;
+        const barH = (ep.total / maxTotal) * chartH;
+        const streamH = ep.streams > 0 ? (ep.streams / maxTotal) * chartH : 0;
+        const dlH = barH - streamH;
+
+        // Downloads portion (bottom)
+        bars += `<rect x="${bx}" y="${padTop + chartH - barH}" width="${barW}" height="${dlH}" fill="#4a90d9" rx="1" opacity="0.85"/>`;
+        // Streams portion (top)
+        if (streamH > 0) {
+            bars += `<rect x="${bx}" y="${padTop + chartH - streamH}" width="${barW}" height="${streamH}" fill="#c9953c" rx="1" opacity="0.85"/>`;
+        }
+
+        if (i % labelInterval === 0) {
+            const d = new Date(ep.published);
+            const label = d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+            xLabels += `<text x="${bx + barW/2}" y="${height - 8}" text-anchor="middle" fill="#8899aa" font-size="9" transform="rotate(-35,${bx + barW/2},${height - 8})">${label}</text>`;
+        }
+    });
+
+    // Average line
+    const avgY = padTop + chartH - (avg / maxTotal) * chartH;
+    const avgLine = `<line x1="${padLeft}" y1="${avgY}" x2="${width - padRight}" y2="${avgY}" stroke="#c9953c" stroke-width="1.5" stroke-dasharray="6,4"/>`;
+    const avgLabel = `<text x="${width - padRight + 4}" y="${avgY + 4}" fill="#c9953c" font-size="10" font-weight="600">${formatNumber(Math.round(avg))}</text>`;
+
+    // Y-axis
+    let yLabels = '';
+    for (let i = 0; i <= 4; i++) {
+        const val = (maxTotal * i / 4);
+        const yPos = padTop + chartH - (i / 4) * chartH;
+        yLabels += `<text x="${padLeft - 8}" y="${yPos + 4}" text-anchor="end" fill="#8899aa" font-size="10">${formatNumber(Math.round(val))}</text>`;
+    }
+
+    // Legend
+    const legend = `
+        <rect x="${padLeft}" y="${height - 18}" width="10" height="10" fill="#4a90d9" rx="2"/>
+        <text x="${padLeft + 14}" y="${height - 9}" fill="#8899aa" font-size="10">Downloads</text>
+        <rect x="${padLeft + 85}" y="${height - 18}" width="10" height="10" fill="#c9953c" rx="2"/>
+        <text x="${padLeft + 99}" y="${height - 9}" fill="#8899aa" font-size="10">Streams</text>
+    `;
+
+    return `
+        <div class="pod-chart-wrap">
+            <div class="pod-chart-title">Episode Performance Over Time</div>
+            <div class="pod-chart">
+                <svg width="100%" viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMinYMin meet">
+                    ${bars}
+                    ${avgLine}
+                    ${avgLabel}
+                    ${yLabels}
+                    ${xLabels}
+                </svg>
+            </div>
+        </div>
+    `;
+}
+
+function buildPodTopList(episodes) {
+    const sorted = [...episodes].sort((a, b) => b.total - a.total);
+    const top15 = sorted.slice(0, 15);
+    const maxTotal = top15[0]?.total || 1;
+
+    let items = top15.map((ep, i) => {
+        const d = new Date(ep.published);
+        const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        const barPct = Math.round((ep.total / maxTotal) * 100);
+        return `
+            <div class="pod-ep">
+                <div class="pod-ep-rank">${i + 1}</div>
+                <div class="pod-ep-info">
+                    <div class="pod-ep-title" title="${esc(ep.title)}">${esc(ep.title)}</div>
+                    <div class="pod-ep-date">${dateStr}</div>
+                </div>
+                <div class="pod-ep-bar-wrap"><div class="pod-ep-bar" style="width:${barPct}%"></div></div>
+                <div class="pod-ep-stats">
+                    <div class="pod-ep-total">${formatNumber(ep.total)}</div>
+                    <div class="pod-ep-breakdown">${formatNumber(ep.downloads)} dl · ${formatNumber(ep.streams)} str</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    return `
+        <div class="pod-top-list">
+            <div class="pod-top-title">🏆 Top 15 Episodes</div>
+            ${items}
+        </div>
+    `;
+}
+
+function buildPodRecentList(episodes) {
+    const recent20 = episodes.slice(0, 20);
+    const avg = episodes.reduce((s, e) => s + e.total, 0) / episodes.length;
+    const maxTotal = Math.max(...recent20.map(e => e.total), 1);
+
+    let items = recent20.map((ep, i) => {
+        const d = new Date(ep.published);
+        const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        const barPct = Math.round((ep.total / maxTotal) * 100);
+        const vsAvg = Math.round(((ep.total - avg) / avg) * 100);
+        const trendClass = vsAvg >= 0 ? 'pod-trend-up' : 'pod-trend-down';
+        const trendStr = (vsAvg >= 0 ? '+' : '') + vsAvg + '% vs avg';
+        return `
+            <div class="pod-ep">
+                <div class="pod-ep-rank" style="background:${ep.total >= avg * 1.2 ? 'var(--green)' : ep.total <= avg * 0.8 ? 'var(--red)' : 'var(--navy)'}">${i + 1}</div>
+                <div class="pod-ep-info">
+                    <div class="pod-ep-title" title="${esc(ep.title)}">${esc(ep.title)}</div>
+                    <div class="pod-ep-date">${dateStr} · <span class="${trendClass}">${trendStr}</span></div>
+                </div>
+                <div class="pod-ep-bar-wrap"><div class="pod-ep-bar" style="width:${barPct}%"></div></div>
+                <div class="pod-ep-stats">
+                    <div class="pod-ep-total">${formatNumber(ep.total)}</div>
+                    <div class="pod-ep-breakdown">${formatNumber(ep.downloads)} dl · ${formatNumber(ep.streams)} str</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    return `
+        <div class="pod-top-list">
+            <div class="pod-top-title">📅 Recent Episodes</div>
+            ${items}
+        </div>
+    `;
+}
+
+function changePodRange(val) {
+    podTimeRange = val;
+    if (podData && podData.length > 0) {
+        renderPodContent(podData, podTimeRange);
+    }
+}
+
+function renderPodcast() {
+    if (podData && podData.length > 0) {
+        renderPodContent(podData, podTimeRange);
+        return;
+    }
+    fetchPodcastData();
 }
 
 // ---- News Briefs ----

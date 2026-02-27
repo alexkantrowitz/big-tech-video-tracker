@@ -3732,8 +3732,28 @@ async function nbAddLink() {
             return;
         }
 
+        const originalTitle = data.title || url;
+
+        // Rewrite headline in our style via Claude
+        let rewrittenTitle = originalTitle;
+        try {
+            btn.textContent = '✍️';
+            const rwResp = await fetch(NB_WORKER_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ headlines: [originalTitle] })
+            });
+            const rwData = await rwResp.json();
+            if (rwData.rewritten && rwData.rewritten[0]) {
+                rewrittenTitle = rwData.rewritten[0];
+            }
+        } catch (e) {
+            console.warn('[NB] Rewrite failed, using original title:', e.message);
+        }
+
         const story = {
-            title: data.title || url,
+            title: rewrittenTitle,
+            originalTitle: originalTitle,
             link: data.link || url,
             source: data.source || new URL(url).hostname.replace('www.', ''),
             pubDate: new Date().toISOString(),

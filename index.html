@@ -3178,7 +3178,7 @@ function renderPodcast() {
 
 // ---- News Briefs ----
 const NB_CACHE_KEY = 'bigtech_nb_cache';
-const NB_CACHE_TTL = 3600000; // 1 hour
+const NB_CACHE_TTL = 1800000; // 30 minutes
 const NB_SEND_KEY = 'bigtech_nb_last_send';
 const NB_AUTO_KEY = 'bigtech_nb_auto_email';
 const NB_MANUAL_KEY = 'bigtech_nb_manual';
@@ -3197,23 +3197,19 @@ const NB_PREFERRED_SOURCES = [
 let nbWeekOffset = 0; // 0 = current week, -1 = last week, etc.
 
 function getNbWeekWindow(offset = 0) {
-    // Week runs Saturday 00:00 ET → Thursday 23:59 ET
+    // Rolling 7-day window ending today
     const now = new Date();
-    // Convert to ET
     const et = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
 
-    // Find the most recent Saturday
-    const day = et.getDay(); // 0=Sun, 6=Sat
-    let satOffset = day >= 6 ? day - 6 : day + 1; // days since last Saturday
-    const saturday = new Date(et);
-    saturday.setDate(saturday.getDate() - satOffset + (offset * 7));
-    saturday.setHours(0, 0, 0, 0);
+    const end = new Date(et);
+    end.setDate(end.getDate() + (offset * 7));
+    end.setHours(23, 59, 59, 999);
 
-    const thursday = new Date(saturday);
-    thursday.setDate(thursday.getDate() + 5); // Thursday = Saturday + 5
-    thursday.setHours(23, 59, 59, 999);
+    const start = new Date(end);
+    start.setDate(start.getDate() - 6);
+    start.setHours(0, 0, 0, 0);
 
-    return { start: saturday, end: thursday };
+    return { start, end };
 }
 
 function formatNbDate(d) {

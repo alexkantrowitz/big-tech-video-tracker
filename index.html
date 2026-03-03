@@ -3896,7 +3896,11 @@ if (window.location.hash && window.location.hash.startsWith('#config=')) {
 }
 
 // ---- Sync from cloud on load ----
+let _syncOnLoadDone = false;
 (async function syncOnLoad() {
+    if (_syncOnLoadDone) return;
+    _syncOnLoadDone = true;
+
     // 1) Sync settings from Worker KV (source of truth for email settings)
     const workerSettings = await fetchSettingsFromWorker();
     if (workerSettings && workerSettings.emails && workerSettings.emails.length > 0) {
@@ -3911,13 +3915,38 @@ if (window.location.hash && window.location.hash.startsWith('#config=')) {
     const cloudData = await fetchFromCloud();
     const localData = loadMonthsData();
 
+    const cloudMonths = cloudData?.months?.length || 0;
     const cloudVideos = cloudData?.months?.reduce((s, m) => s + (m.videos?.length || 0), 0) || 0;
+    const localMonths = localData.months.length;
     const localVideos = localData.months.reduce((s, m) => s + m.videos.length, 0);
-    console.log('[SYNC] Cloud:', cloudData?.months?.length || 0, 'months,', cloudVideos, 'videos | Local:', localData.months.length, 'months,', localVideos, 'videos');
+    console.log('[SYNC] Cloud:', cloudMonths, 'months,', cloudVideos, 'videos | Local:', localMonths, 'months,', localVideos, 'videos');
 
-    if (cloudData && cloudData.months && cloudData.months.length > 0 && cloudVideos > 0) {
-        // Cloud has real data — use it as source of truth on page load
-        console.log('[SYNC] Using cloud data as source of truth');
+    if (!cloudData || !cloudData.months || cloudData.months.length === 0) {
+        // Cloud is empty or unreachable — seed it from local
+        console.log('[SYNC] Cloud empty → seeding from local (' + localVideos + ' videos)');
+        if (localVideos > 0) {
+            localData.settings = loadSettings();
+            localData.lastModified = Date.now();
+            await saveToCloud(localData);
+            toast('Local data pushed to cloud (' + localVideos + ' videos)', 'success');
+        }
+        return;
+    }
+
+    // Compare: use whichever has more months or more videos (most complete data wins)
+    const cloudScore = cloudMonths * 100 + cloudVideos;
+    const localScore = localMonths * 100 + localVideos;
+
+    if (localScore > cloudScore) {
+        // Local has more data — push to cloud
+        console.log('[SYNC] Local is more complete (' + localMonths + ' months, ' + localVideos + ' vids) → pushing to cloud');
+        localData.settings = loadSettings();
+        localData.lastModified = Date.now();
+        await saveToCloud(localData);
+        toast('Local data pushed to cloud', 'success');
+    } else if (cloudScore > localScore) {
+        // Cloud has more data — pull from cloud
+        console.log('[SYNC] Cloud is more complete → pulling from cloud');
         localStorage.setItem(MONTHS_KEY, JSON.stringify(cloudData));
         loadActiveVideos();
         renderMonthBar();
@@ -3926,13 +3955,19 @@ if (window.location.hash && window.location.hash.startsWith('#config=')) {
         updateSubtitle();
         toast('Synced from cloud (' + cloudVideos + ' videos)', 'success');
     } else {
-        // Cloud is empty or unreachable — seed it from local
-        console.log('[SYNC] Cloud empty → seeding from local (' + localVideos + ' videos)');
-        if (localVideos > 0) {
-            localData.settings = loadSettings();
-            localData.lastModified = Date.now();
-            await saveToCloud(localData);
-            toast('Local data pushed to cloud (' + localVideos + ' videos)', 'success');
+        // Same amount of data — use cloud as tiebreaker but also check lastModified
+        const cloudMod = cloudData.lastModified || 0;
+        const localMod = localData.lastModified || 0;
+        if (cloudMod > localMod) {
+            console.log('[SYNC] Same data count, cloud is newer → pulling');
+            localStorage.setItem(MONTHS_KEY, JSON.stringify(cloudData));
+            loadActiveVideos();
+            renderMonthBar();
+            renderTable();
+            updateStats();
+            updateSubtitle();
+        } else {
+            console.log('[SYNC] Data in sync, no changes needed');
         }
     }
 })();

@@ -2613,6 +2613,81 @@ async function fetchSubGrowth(days) {
     }
 }
 
+function generateSgInsights(sliced, stats) {
+    if (!sliced || sliced.length < 7) return [];
+    const insights = [];
+
+    // 1. Growth trajectory — last 7 days vs overall
+    const last7 = sliced.slice(-7);
+    const last7Avg = last7.reduce((s, d) => s + d.net, 0) / 7;
+    const overallAvg = stats.avgPerDay;
+    const trendPct = Math.round(((last7Avg - overallAvg) / Math.abs(overallAvg || 1)) * 100);
+    if (trendPct > 15) {
+        insights.push(`Growth is accelerating — the last 7 days averaged +${last7Avg.toFixed(1)} net subs/day, ${trendPct}% above your ${sliced.length}-day average.`);
+    } else if (trendPct < -15) {
+        insights.push(`Growth is slowing — the last 7 days averaged +${last7Avg.toFixed(1)} net subs/day, ${Math.abs(trendPct)}% below your ${sliced.length}-day average.`);
+    } else {
+        insights.push(`Growth is steady — the last 7 days averaged +${last7Avg.toFixed(1)} net subs/day, right in line with your ${sliced.length}-day average of +${overallAvg.toFixed(1)}.`);
+    }
+
+    // 2. Best and worst day callout
+    const best = sliced.reduce((b, d) => d.net > b.net ? d : b, sliced[0]);
+    const worst = sliced.reduce((w, d) => d.net < w.net ? d : w, sliced[0]);
+    const bestDate = new Date(best.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const worstDate = new Date(worst.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    insights.push(`Best day was ${bestDate} (+${best.gained} gained, -${best.lost} lost = +${best.net} net). Worst was ${worstDate} (+${worst.gained}, -${worst.lost} = ${worst.net >= 0 ? '+' : ''}${worst.net}).`);
+
+    // 3. Churn rate assessment
+    const churnRate = stats.totalLost / (stats.totalGained || 1);
+    const churnPct = (churnRate * 100).toFixed(1);
+    let churnLabel = 'low';
+    if (churnRate > 0.25) churnLabel = 'elevated';
+    else if (churnRate > 0.15) churnLabel = 'moderate';
+    insights.push(`Churn rate is ${churnLabel} at ${churnPct}% — for every 100 subscribers gained, ${Math.round(churnRate * 100)} are lost.`);
+
+    return insights;
+}
+
+async function fetchSgAiInsights(sliced, stats) {
+    if (!sliced || sliced.length < 7) return null;
+    try {
+        const payload = {
+            subGrowth: sliced.map(d => ({
+                date: d.date,
+                gained: d.gained,
+                lost: d.lost,
+                net: d.net
+            })),
+            stats: {
+                totalNet: stats.totalNet.toLocaleString(),
+                totalGained: stats.totalGained.toLocaleString(),
+                totalLost: stats.totalLost.toLocaleString(),
+                avgPerDay: stats.avgPerDay.toFixed(1)
+            }
+        };
+
+        const res = await fetch(NB_WORKER_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+            console.warn('[SG] AI insights worker error:', res.status);
+            return null;
+        }
+
+        const data = await res.json();
+        if (data.insights && data.insights.length > 0) {
+            return data.insights;
+        }
+        return null;
+    } catch (e) {
+        console.warn('[SG] AI insights failed:', e.message);
+        return null;
+    }
+}
+
 function renderSgContent(data, days) {
     const container = document.getElementById('sgContainer');
     if (!data || data.length === 0) {
@@ -2630,6 +2705,9 @@ function renderSgContent(data, days) {
     const avgPerDay = totalNet / sliced.length;
     const bestDay = sliced.reduce((best, d) => d.net > best.net ? d : best, sliced[0]);
     const worstDay = sliced.reduce((worst, d) => d.net < worst.net ? d : worst, sliced[0]);
+
+    const sgStats = { totalNet: totalNet, totalGained: totalGained, totalLost: totalLost, avgPerDay: avgPerDay };
+    const insights = generateSgInsights(sliced, sgStats);
 
     // Cache age
     const cache = getSgCache();
@@ -2671,6 +2749,14 @@ function renderSgContent(data, days) {
         </div>
     `;
 
+    // Insights box (between stats and chart)
+    if (insights.length > 0) {
+        html += `<div class="vp-insights" id="sgInsightsBox">
+            <div class="vp-insights-title">💡 Insights <span id="sgInsightsStatus" style="font-size:11px;color:#8899aa;font-weight:normal;margin-left:8px;">⏳ Generating AI insights...</span></div>
+            <ul id="sgInsightsList">${insights.map(i => `<li>${i}</li>`).join('')}</ul>
+        </div>`;
+    }
+
     // Build SVG chart
     html += buildSgChart(sliced);
 
@@ -2678,6 +2764,20 @@ function renderSgContent(data, days) {
     html += buildSgTable(sliced, bestDay, worstDay);
 
     container.innerHTML = html;
+
+    // Async: fetch AI-powered insights and replace fallback ones
+    if (insights.length > 0) {
+        fetchSgAiInsights(sliced, sgStats).then(aiInsights => {
+            const listEl = document.getElementById('sgInsightsList');
+            const statusEl = document.getElementById('sgInsightsStatus');
+            if (aiInsights && aiInsights.length > 0 && listEl) {
+                listEl.innerHTML = aiInsights.map(i => `<li>${i}</li>`).join('');
+                if (statusEl) statusEl.textContent = '✨ AI-powered';
+            } else {
+                if (statusEl) statusEl.textContent = '';
+            }
+        });
+    }
 }
 
 function buildSgChart(data) {

@@ -2528,6 +2528,8 @@ function renderTpGrid(unused, cachedResult) {
             const retText = avgPct != null ? `${avgPct.toFixed(1)}% retention` : '';
             const ctrText = ctrPct != null ? `${ctrPct}% CTR` : '';
             const impressionsText = aData?.impressions ? `${formatNumber(aData.impressions)} impr.` : '';
+            const daysSincePublish = Math.floor((Date.now() - date.getTime()) / (1000 * 60 * 60 * 24));
+            const pendingText = (!aData && daysSincePublish < 3) ? '<span class="tp-card-date" style="color:var(--accent-light);font-style:italic;">⏳ Analytics pending</span>' : '';
 
             html += `
                 <div class="tp-card ${tier}">
@@ -2541,6 +2543,7 @@ function renderTpGrid(unused, cachedResult) {
                             <span class="tp-card-views ${!ctrText ? tier : ''}">${formatNumber(v.views)} views</span>
                             ${retText ? `<span class="tp-card-date">${retText}</span>` : ''}
                             <span class="tp-card-date">${dateStr}</span>
+                            ${pendingText}
                         </div>
                     </div>
                 </div>`;

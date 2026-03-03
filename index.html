@@ -2351,12 +2351,16 @@ function renderThumbnailPerformance() {
     const fullCache = getTpFullCache();
     if (fullCache && fullCache.analyticsData && Object.keys(fullCache.analyticsData).length > 0) {
         renderTpGrid(null, fullCache);
+        // Background refresh to keep data fresh
+        refreshTpInBackground();
         return;
     }
-    // 2. Try stale full cache with analytics
+    // 2. Try stale full cache with analytics — show it, then refresh in background
     const staleFullCache = getTpFullCache(true);
     if (staleFullCache && staleFullCache.analyticsData && Object.keys(staleFullCache.analyticsData).length > 0) {
         renderTpGrid(null, staleFullCache);
+        // Stale data shown — refresh in background
+        refreshTpInBackground();
         return;
     }
     // 3. No cache with analytics — fetch from scratch (show spinner, get the real data)

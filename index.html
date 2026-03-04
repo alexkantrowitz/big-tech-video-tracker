@@ -535,6 +535,76 @@
         .nb-toggle input:checked + .nb-toggle-slider { background: var(--accent); }
         .nb-toggle input:checked + .nb-toggle-slider::before { transform: translateX(20px); }
 
+        /* ---- Chat ---- */
+        #chatContainer {
+            display: flex; flex-direction: column;
+            height: calc(100vh - 220px); min-height: 400px;
+        }
+        .chat-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 12px; flex-wrap: wrap; gap: 8px;
+        }
+        .chat-header h2 { font-size: 18px; font-weight: 700; color: var(--navy); margin: 0; }
+        .chat-meta { font-size: 12px; color: var(--steel); }
+        .chat-messages {
+            flex: 1; overflow-y: auto; padding: 16px 0;
+            display: flex; flex-direction: column; gap: 12px;
+        }
+        .chat-welcome { text-align: center; padding: 60px 20px; color: var(--steel); }
+        .chat-welcome-icon { font-size: 48px; margin-bottom: 12px; }
+        .chat-welcome-title { font-size: 18px; font-weight: 700; color: var(--navy); margin-bottom: 20px; }
+        .chat-welcome-examples {
+            display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; max-width: 600px; margin: 0 auto;
+        }
+        .chat-example-btn {
+            padding: 10px 16px; border: 1px solid var(--cloud); border-radius: 20px;
+            background: var(--pure-white); color: var(--navy); font-size: 13px;
+            font-weight: 500; cursor: pointer; font-family: inherit;
+            transition: all 0.2s ease; box-shadow: var(--shadow);
+        }
+        .chat-example-btn:hover { border-color: var(--accent); color: var(--accent); background: #fffbf0; }
+        .chat-msg {
+            max-width: 75%; padding: 12px 16px; border-radius: 12px;
+            font-size: 14px; line-height: 1.6; word-wrap: break-word;
+        }
+        .chat-msg.user {
+            align-self: flex-end; background: var(--accent); color: var(--pure-white);
+            border-bottom-right-radius: 4px;
+        }
+        .chat-msg.assistant {
+            align-self: flex-start; background: var(--navy); color: #e2e8f0;
+            border-bottom-left-radius: 4px;
+        }
+        .chat-msg.assistant strong { color: var(--accent-light); }
+        .chat-msg.loading {
+            align-self: flex-start; background: var(--navy-light); color: var(--steel); font-style: italic;
+        }
+        .chat-msg.loading::after {
+            content: ''; display: inline-block; width: 12px; height: 12px;
+            border: 2px solid var(--steel); border-top-color: var(--accent);
+            border-radius: 50%; animation: spin 0.8s linear infinite;
+            margin-left: 8px; vertical-align: middle;
+        }
+        .chat-msg.error {
+            align-self: flex-start; background: #fde8e6; color: var(--red); border-bottom-left-radius: 4px;
+        }
+        .chat-input-bar {
+            display: flex; gap: 10px; padding-top: 12px; border-top: 1px solid var(--cloud);
+        }
+        .chat-input-bar input {
+            flex: 1; padding: 12px 16px; border: 1px solid var(--cloud);
+            border-radius: var(--radius); font-size: 14px; font-family: inherit; color: var(--navy);
+            transition: border-color 0.2s ease;
+        }
+        .chat-input-bar input:focus {
+            border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px rgba(201,149,60,0.1);
+        }
+        .chat-input-bar input:disabled { opacity: 0.5; }
+        @media (max-width: 640px) {
+            .chat-msg { max-width: 90%; }
+            #chatContainer { height: calc(100vh - 180px); }
+        }
+
         /* ---- Thumbnail Performance ---- */
         .tp-header {
             display: flex; align-items: center; justify-content: space-between;
@@ -843,6 +913,7 @@
     <div class="tab" data-tab="newsbriefs">News Briefs</div>
     <div class="tab" data-tab="newmonth">New Month</div>
     <div class="tab" data-tab="settings">Email Settings</div>
+    <div class="tab" data-tab="chat">Chat</div>
 </div>
 
 <div class="content">
@@ -1019,6 +1090,32 @@
                 <div style="margin-top:12px; padding:12px 16px; background:rgba(226,166,49,0.1); border:1px solid rgba(226,166,49,0.3); border-radius:8px; font-size:0.85rem; color:#94a3b8;">
                     <strong style="color:#e2a631;">💡 Cloud Sync:</strong> Email settings are automatically synced to the cloud. They'll persist across browsers and devices — no bookmarking needed.
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat Tab -->
+    <div id="chat" class="tab-content">
+        <div id="chatContainer">
+            <div class="chat-header">
+                <h2>💬 Ask About Your Data</h2>
+                <span class="chat-meta">Powered by Claude — ask about video performance, subscribers, thumbnails, podcasts</span>
+            </div>
+            <div class="chat-messages" id="chatMessages">
+                <div class="chat-welcome">
+                    <div class="chat-welcome-icon">💬</div>
+                    <div class="chat-welcome-title">Ask anything about your data</div>
+                    <div class="chat-welcome-examples">
+                        <button class="chat-example-btn" onclick="sendExampleQuestion(this)">Which video got the most views?</button>
+                        <button class="chat-example-btn" onclick="sendExampleQuestion(this)">How is my subscriber growth trending?</button>
+                        <button class="chat-example-btn" onclick="sendExampleQuestion(this)">What's my average thumbnail CTR?</button>
+                        <button class="chat-example-btn" onclick="sendExampleQuestion(this)">Which podcast episode performed best?</button>
+                    </div>
+                </div>
+            </div>
+            <div class="chat-input-bar">
+                <input type="text" id="chatInput" placeholder="Ask about your videos, subscribers, thumbnails, podcasts..." autocomplete="off">
+                <button class="btn btn-accent" id="chatSendBtn" onclick="sendChatMessage()">Send</button>
             </div>
         </div>
     </div>
@@ -1805,6 +1902,7 @@ document.querySelectorAll('.tab').forEach(tab => {
         if (tab.dataset.tab === 'subgrowth') renderSubGrowth();
         if (tab.dataset.tab === 'podcast') renderPodcast();
         if (tab.dataset.tab === 'newsbriefs') loadNewsBriefs();
+        if (tab.dataset.tab === 'chat') renderChat();
     });
 });
 
@@ -4000,6 +4098,152 @@ renderSettings();
 // ---- Strip legacy #config= hash if present ----
 if (window.location.hash && window.location.hash.startsWith('#config=')) {
     history.replaceState(null, '', window.location.pathname + window.location.search);
+}
+
+// ---- Chat ----
+let chatHistory = [];
+let chatBusy = false;
+
+function gatherDataContext() {
+    const sections = [];
+
+    // Video Performance
+    if (vpAllVideos && vpAllVideos.length > 0) {
+        const totalViews = vpAllVideos.reduce((s, v) => s + v.views, 0);
+        const avgViews = Math.round(totalViews / vpAllVideos.length);
+        const topVideos = vpAllVideos.slice(0, 20).map((v, i) =>
+            `  ${i + 1}. "${v.title}" — ${v.views.toLocaleString()} views, ${Math.round(v.duration)}min, published ${new Date(v.publishedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+        ).join('\n');
+        sections.push('VIDEO PERFORMANCE (longform videos):\nTotal: ' + vpAllVideos.length + ' videos | Average views: ' + avgViews.toLocaleString() + ' | Total views: ' + totalViews.toLocaleString() + '\nTop videos:\n' + topVideos);
+    }
+
+    // Thumbnail / CTR data
+    const tpCache = getTpFullCache(true);
+    if (tpCache && tpCache.analyticsData) {
+        const entries = (tpCache.sortedVideos || []).slice(0, 20).map(v => {
+            const a = tpCache.analyticsData[v.id];
+            if (!a) return null;
+            return '  "' + v.title + '" — CTR: ' + (a.ctr ? (a.ctr * 100).toFixed(1) + '%' : 'N/A') + ', impressions: ' + (a.impressions || 0).toLocaleString() + ', retention: ' + (a.avgViewPct ? a.avgViewPct.toFixed(1) + '%' : 'N/A');
+        }).filter(Boolean).join('\n');
+        if (entries) sections.push('THUMBNAIL & CTR DATA (ranked by CTR):\n' + entries);
+    }
+
+    // Subscriber Growth
+    const sgCache = getSgCache();
+    if (sgCache && sgCache.data && sgCache.data.length > 0) {
+        const data = sgCache.data;
+        const recent = data.slice(-30);
+        const totalNet = recent.reduce((s, d) => s + d.net, 0);
+        const totalGained = recent.reduce((s, d) => s + d.gained, 0);
+        const totalLost = recent.reduce((s, d) => s + d.lost, 0);
+        const avg = (totalNet / recent.length).toFixed(1);
+        const last7 = data.slice(-7).map(d => '  ' + d.date + ': +' + d.gained + ' gained, -' + d.lost + ' lost, net ' + (d.net >= 0 ? '+' : '') + d.net).join('\n');
+        sections.push('SUBSCRIBER GROWTH (last 30 days):\nNet: +' + totalNet.toLocaleString() + ' | Gained: ' + totalGained.toLocaleString() + ' | Lost: ' + totalLost.toLocaleString() + ' | Avg/day: ' + avg + '\nTotal data: ' + data.length + ' days\nLast 7 days:\n' + last7);
+    }
+
+    // Podcast
+    const podEps = getPodCache();
+    if (podEps && podEps.length > 0) {
+        const totalDl = podEps.reduce((s, e) => s + (e.total || 0), 0);
+        const topEps = podEps.slice(0, 15).map((e, i) =>
+            '  ' + (i + 1) + '. "' + e.title + '" — ' + (e.total || 0).toLocaleString() + ' total plays, published ' + (e.published || 'N/A')
+        ).join('\n');
+        sections.push('PODCAST ANALYTICS:\nTotal episodes: ' + podEps.length + ' | Total plays: ' + totalDl.toLocaleString() + '\n' + topEps);
+    }
+
+    if (sections.length === 0) {
+        return 'No data currently loaded. Visit other tabs first (Video Performance, Sub Growth, Podcast) to load data.';
+    }
+    return sections.join('\n\n---\n\n');
+}
+
+function renderChat() {
+    const input = document.getElementById('chatInput');
+    if (!input.dataset.bound) {
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(); }
+        });
+        input.dataset.bound = '1';
+    }
+    input.focus();
+}
+
+function sendExampleQuestion(btn) {
+    document.getElementById('chatInput').value = btn.textContent;
+    sendChatMessage();
+}
+
+async function sendChatMessage() {
+    const input = document.getElementById('chatInput');
+    const text = input.value.trim();
+    if (!text || chatBusy) return;
+
+    chatBusy = true;
+    const sendBtn = document.getElementById('chatSendBtn');
+    sendBtn.disabled = true;
+    input.disabled = true;
+    input.value = '';
+
+    const messagesEl = document.getElementById('chatMessages');
+    const welcome = messagesEl.querySelector('.chat-welcome');
+    if (welcome) welcome.remove();
+
+    appendChatMessage('user', text);
+    chatHistory.push({ role: 'user', content: text });
+
+    const loadingEl = document.createElement('div');
+    loadingEl.className = 'chat-msg loading';
+    loadingEl.textContent = 'Thinking';
+    messagesEl.appendChild(loadingEl);
+    scrollChatToBottom();
+
+    try {
+        const context = gatherDataContext();
+        const res = await fetch(NB_WORKER_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat: { messages: chatHistory.slice(-10), context } })
+        });
+        if (!res.ok) throw new Error('Request failed: ' + res.status);
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+
+        loadingEl.remove();
+        const reply = data.reply || 'No response received.';
+        appendChatMessage('assistant', reply);
+        chatHistory.push({ role: 'assistant', content: reply });
+    } catch (err) {
+        loadingEl.remove();
+        appendChatMessage('error', 'Error: ' + err.message);
+        chatHistory.pop();
+    } finally {
+        chatBusy = false;
+        sendBtn.disabled = false;
+        input.disabled = false;
+        input.focus();
+    }
+}
+
+function appendChatMessage(type, text) {
+    const messagesEl = document.getElementById('chatMessages');
+    const msgEl = document.createElement('div');
+    msgEl.className = 'chat-msg ' + type;
+    if (type === 'assistant') {
+        msgEl.innerHTML = text
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/`(.*?)`/g, '<code style="background:rgba(255,255,255,0.1);padding:2px 5px;border-radius:3px;font-size:12px;">$1</code>')
+            .replace(/\n/g, '<br>');
+    } else {
+        msgEl.textContent = text;
+    }
+    messagesEl.appendChild(msgEl);
+    scrollChatToBottom();
+}
+
+function scrollChatToBottom() {
+    const el = document.getElementById('chatMessages');
+    el.scrollTop = el.scrollHeight;
 }
 
 // ---- Sync from cloud on load ----

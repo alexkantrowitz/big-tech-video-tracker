@@ -1170,8 +1170,8 @@ const LEGACY_KEY = 'bigtech_videos';
 
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
-// ---- Cloud Sync (npoint.io) ----
-const NPOINT_URL = 'https://api.npoint.io/aacc4d4f83658845c610';
+// ---- Cloud Sync (Cloudflare Worker KV) ----
+const NPOINT_URL = 'https://news-briefs-rewriter.alex-kantrowitz.workers.dev/months';
 
 let cloudSyncEnabled = !!NPOINT_URL;
 let isSyncing = false;

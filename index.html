@@ -406,7 +406,7 @@
             padding-left: 20px; position: relative;
         }
         .vp-insights li::before {
-            content: '→'; position: absolute; left: 0; color: var(--accent-light); font-weight: 700;
+            content: '‚Üí'; position: absolute; left: 0; color: var(--accent-light); font-weight: 700;
         }
         .vp-pagination {
             display: flex; align-items: center; justify-content: center;
@@ -924,8 +924,8 @@
             <button class="btn btn-primary" onclick="addRow()">+ Add Video</button>
             <button class="btn btn-danger" onclick="deleteSelected()">Delete Selected</button>
             <button class="btn btn-email" onclick="emailSelected()">Email Selected</button>
-            <button class="btn btn-accent" onclick="saveNow()" id="saveBtn">💾 Save</button>
-            <button class="btn btn-secondary" onclick="testCloudSync()" id="testSyncBtn" title="Test if cloud sync is working">🔍 Test Sync</button>
+            <button class="btn btn-accent" onclick="saveNow()" id="saveBtn">üíæ Save</button>
+            <button class="btn btn-secondary" onclick="testCloudSync()" id="testSyncBtn" title="Test if cloud sync is working">üîç Test Sync</button>
         </div>
         <div class="table-wrap">
             <table>
@@ -960,21 +960,21 @@
         <div class="dash-grid">
             <div class="dash-card dash-yt">
                 <div class="dash-card-header">
-                    <span class="dash-card-icon">▶</span>
+                    <span class="dash-card-icon">‚ñ∂</span>
                     <h3>YouTube</h3>
                 </div>
                 <div class="dash-yt-stats">
                     <div class="dash-big-stat">
-                        <div class="dash-big-number" id="ytSubCount">—</div>
+                        <div class="dash-big-number" id="ytSubCount">‚Äî</div>
                         <div class="dash-big-label">Subscribers</div>
                     </div>
                     <div class="dash-yt-row">
                         <div class="dash-mini-stat">
-                            <div class="dash-mini-number" id="ytVideoCount">—</div>
+                            <div class="dash-mini-number" id="ytVideoCount">‚Äî</div>
                             <div class="dash-mini-label">Total Videos</div>
                         </div>
                         <div class="dash-mini-stat">
-                            <div class="dash-mini-number" id="ytViewCount">—</div>
+                            <div class="dash-mini-number" id="ytViewCount">‚Äî</div>
                             <div class="dash-mini-label">Total Views</div>
                         </div>
                     </div>
@@ -984,14 +984,14 @@
             </div>
             <div class="dash-card dash-alltime">
                 <div class="dash-card-header">
-                    <span class="dash-card-icon">📊</span>
+                    <span class="dash-card-icon">üìä</span>
                     <h3>All-Time Production</h3>
                 </div>
                 <div class="dash-alltime-grid" id="dashAlltimeStats"></div>
             </div>
             <div class="dash-card dash-monthly-breakdown">
                 <div class="dash-card-header">
-                    <span class="dash-card-icon">📅</span>
+                    <span class="dash-card-icon">üìÖ</span>
                     <h3>Monthly Breakdown</h3>
                 </div>
                 <div class="dash-months-table" id="dashMonthsTable"></div>
@@ -1088,7 +1088,7 @@
                     <span id="emailStatus"></span>
                 </div>
                 <div style="margin-top:12px; padding:12px 16px; background:rgba(226,166,49,0.1); border:1px solid rgba(226,166,49,0.3); border-radius:8px; font-size:0.85rem; color:#94a3b8;">
-                    <strong style="color:#e2a631;">💡 Cloud Sync:</strong> Email settings are automatically synced to the cloud. They'll persist across browsers and devices — no bookmarking needed.
+                    <strong style="color:#e2a631;">üí° Cloud Sync:</strong> Email settings are automatically synced to the cloud. They'll persist across browsers and devices ‚Äî no bookmarking needed.
                 </div>
             </div>
         </div>
@@ -1098,12 +1098,12 @@
     <div id="chat" class="tab-content">
         <div id="chatContainer">
             <div class="chat-header">
-                <h2>💬 Ask About Your Data</h2>
-                <span class="chat-meta">Powered by Claude — ask about video performance, subscribers, thumbnails, podcasts</span>
+                <h2>üí¨ Ask About Your Data</h2>
+                <span class="chat-meta">Powered by Claude ‚Äî ask about video performance, subscribers, thumbnails, podcasts</span>
             </div>
             <div class="chat-messages" id="chatMessages">
                 <div class="chat-welcome">
-                    <div class="chat-welcome-icon">💬</div>
+                    <div class="chat-welcome-icon">üí¨</div>
                     <div class="chat-welcome-title">Ask anything about your data</div>
                     <div class="chat-welcome-examples">
                         <button class="chat-example-btn" onclick="sendExampleQuestion(this)">Which video got the most views?</button>
@@ -1250,14 +1250,14 @@ function updateSyncBadge(state) {
         document.body.appendChild(badge);
     }
     if (state === 'saving') {
-        badge.textContent = '☁️ Saving...';
+        badge.textContent = '‚òÅÔ∏è Saving...';
         badge.style.background = '#2563eb'; badge.style.color = '#fff'; badge.style.opacity = '1';
     } else if (state === 'saved') {
-        badge.textContent = '✅ Saved';
+        badge.textContent = '‚úÖ Saved';
         badge.style.background = '#16a34a'; badge.style.color = '#fff'; badge.style.opacity = '1';
         setTimeout(() => badge.style.opacity = '0', 2000);
     } else if (state === 'error') {
-        badge.textContent = '❌ Sync Error';
+        badge.textContent = '‚ùå Sync Error';
         badge.style.background = '#dc2626'; badge.style.color = '#fff'; badge.style.opacity = '1';
         setTimeout(() => badge.style.opacity = '0', 5000);
     }
@@ -1286,7 +1286,7 @@ function loadMonthsData() {
         return data;
     }
 
-    // Migrate legacy data — save to localStorage ONLY (not cloud)
+    // Migrate legacy data ‚Äî save to localStorage ONLY (not cloud)
     // Cloud sync happens later in syncOnLoad to avoid race conditions
     const legacyRaw = localStorage.getItem(LEGACY_KEY);
     const legacyVideos = legacyRaw ? JSON.parse(legacyRaw) : DEFAULT_VIDEOS.map(d => ({...d}));
@@ -1310,7 +1310,7 @@ function saveMonthsData(data) {
 
 async function saveNow() {
     const btn = document.getElementById('saveBtn');
-    btn.textContent = '⏳ Saving...';
+    btn.textContent = '‚è≥ Saving...';
     btn.disabled = true;
     try {
         const data = loadMonthsData();
@@ -1325,26 +1325,26 @@ async function saveNow() {
             const cloudVids = verify.months.reduce((s, m) => s + m.videos.length, 0);
             const localVids = data.months.reduce((s, m) => s + m.videos.length, 0);
             if (cloudVids === localVids) {
-                btn.textContent = '✅ Verified!';
-                toast('Saved & verified — ' + localVids + ' videos in cloud', 'success');
+                btn.textContent = '‚úÖ Verified!';
+                toast('Saved & verified ‚Äî ' + localVids + ' videos in cloud', 'success');
             } else {
-                btn.textContent = '⚠️ Mismatch';
+                btn.textContent = '‚ö†Ô∏è Mismatch';
                 toast('Saved but cloud has ' + cloudVids + ' videos vs local ' + localVids, 'error');
             }
         } else {
-            btn.textContent = '⚠️ Unverified';
-            toast('Save sent but could not verify — cloud returned empty', 'error');
+            btn.textContent = '‚ö†Ô∏è Unverified';
+            toast('Save sent but could not verify ‚Äî cloud returned empty', 'error');
         }
     } catch (err) {
-        btn.textContent = '❌ Error';
+        btn.textContent = '‚ùå Error';
         toast('Save failed: ' + err.message, 'error');
     }
-    setTimeout(() => { btn.textContent = '💾 Save'; btn.disabled = false; }, 3000);
+    setTimeout(() => { btn.textContent = 'üíæ Save'; btn.disabled = false; }, 3000);
 }
 
 async function testCloudSync() {
     const btn = document.getElementById('testSyncBtn');
-    btn.textContent = '⏳ Testing...'; btn.disabled = true;
+    btn.textContent = '‚è≥ Testing...'; btn.disabled = true;
     const results = [];
     try {
         // Step 1: Write current data to cloud
@@ -1352,7 +1352,7 @@ async function testCloudSync() {
         data.settings = loadSettings();
         data.lastModified = Date.now();
         const body = JSON.stringify(data);
-        results.push('📤 Sending ' + body.length + ' bytes...');
+        results.push('üì§ Sending ' + body.length + ' bytes...');
 
         const writeRes = await fetch(NPOINT_URL, {
             method: 'POST',
@@ -1360,41 +1360,41 @@ async function testCloudSync() {
             headers: { 'Content-Type': 'application/json' },
             body: body
         });
-        results.push('📤 POST response: HTTP ' + writeRes.status);
+        results.push('üì§ POST response: HTTP ' + writeRes.status);
         if (!writeRes.ok) {
             const errText = await writeRes.text();
-            results.push('❌ POST failed: ' + errText);
+            results.push('‚ùå POST failed: ' + errText);
             alert('SYNC TEST RESULTS:\n\n' + results.join('\n'));
             return;
         }
         const writeData = await writeRes.json();
-        results.push('📤 POST returned ' + JSON.stringify(writeData).length + ' bytes');
+        results.push('üì§ POST returned ' + JSON.stringify(writeData).length + ' bytes');
 
         // Step 2: Read back from cloud
         const readUrl = NPOINT_URL + '?t=' + Date.now();
         const readRes = await fetch(readUrl, { cache: 'no-store' });
-        results.push('📥 GET response: HTTP ' + readRes.status);
+        results.push('üì• GET response: HTTP ' + readRes.status);
         const readData = await readRes.json();
         const cloudMonths = readData.months ? readData.months.length : 0;
         const cloudVideos = readData.months && readData.months[0] ? readData.months[0].videos.length : 0;
-        results.push('📥 Cloud has: ' + cloudMonths + ' months, ' + cloudVideos + ' videos');
-        results.push('📥 lastModified: ' + readData.lastModified);
+        results.push('üì• Cloud has: ' + cloudMonths + ' months, ' + cloudVideos + ' videos');
+        results.push('üì• lastModified: ' + readData.lastModified);
 
         // Step 3: Compare
         const localVideos = data.months && data.months[0] ? data.months[0].videos.length : 0;
         if (cloudVideos === localVideos) {
-            results.push('✅ SYNC WORKING! Cloud matches local (' + localVideos + ' videos)');
+            results.push('‚úÖ SYNC WORKING! Cloud matches local (' + localVideos + ' videos)');
             toast('Cloud sync verified! Data is saving correctly.', 'success');
         } else {
-            results.push('⚠️ MISMATCH: Local has ' + localVideos + ' videos, cloud has ' + cloudVideos);
-            toast('Sync mismatch detected — see alert', 'error');
+            results.push('‚ö†Ô∏è MISMATCH: Local has ' + localVideos + ' videos, cloud has ' + cloudVideos);
+            toast('Sync mismatch detected ‚Äî see alert', 'error');
         }
     } catch (err) {
-        results.push('❌ ERROR: ' + err.message);
+        results.push('‚ùå ERROR: ' + err.message);
         toast('Sync test failed: ' + err.message, 'error');
     }
     alert('SYNC TEST RESULTS:\n\n' + results.join('\n'));
-    btn.textContent = '🔍 Test Sync'; btn.disabled = false;
+    btn.textContent = 'üîç Test Sync'; btn.disabled = false;
 }
 
 function getActiveMonth() {
@@ -1613,7 +1613,7 @@ function updateStats() {
             <div class="stat-info"><div class="stat-count">${shorts}</div><div class="stat-label">Shorts</div></div>
         </div>
         <div class="stat-card">
-            <div class="stat-icon thumb">🖼</div>
+            <div class="stat-icon thumb">üñº</div>
             <div class="stat-info"><div class="stat-count">${thumbsDone}</div><div class="stat-label">Thumbnails</div></div>
         </div>
     `;
@@ -1884,7 +1884,7 @@ function removeEmail(idx) {
 
 function saveSettings() {
     const settings = loadSettings();
-    // EmailJS credentials are hardcoded in DEFAULT_SETTINGS — just save email list
+    // EmailJS credentials are hardcoded in DEFAULT_SETTINGS ‚Äî just save email list
     saveSettingsData(settings);
     toast('Settings saved', 'success');
 }
@@ -1915,7 +1915,7 @@ const YT_CHANNEL_ID = 'UCye1YedIypHffYb8k6Gp9wg';
 const YT_API_KEY = 'AIzaSyDHSKE85zh7z_YZ-crCya2YMrFF0SlmIlA';
 
 function formatNumber(n) {
-    if (!n) return '—';
+    if (!n) return '‚Äî';
     const num = parseInt(n);
     if (num >= 1000000) return (num / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
     if (num >= 1000) return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
@@ -1934,7 +1934,7 @@ async function fetchYouTubeStats() {
             document.getElementById('ytViewCount').textContent = formatNumber(stats.viewCount);
             document.getElementById('ytUpdated').textContent = 'Updated just now';
 
-            // 100K Subscriber Trajectory — based on recent growth, not all-time
+            // 100K Subscriber Trajectory ‚Äî based on recent growth, not all-time
             // Known data point from YouTube Studio: ~17,000 subs in Feb 2025
             const subs = parseInt(stats.subscriberCount);
             const now = new Date();
@@ -1947,7 +1947,7 @@ async function fetchYouTubeStats() {
 
             if (subs >= 100000) {
                 trajEl.innerHTML = `
-                    <div class="dash-traj-label">🎉 100,000 Subscriber Trajectory</div>
+                    <div class="dash-traj-label">üéâ 100,000 Subscriber Trajectory</div>
                     <div class="dash-traj-date">Already reached!</div>
                 `;
             } else if (subsPerMonth > 0) {
@@ -1956,9 +1956,9 @@ async function fetchYouTubeStats() {
                 const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
                 const dateStr = monthNames[targetDate.getMonth()] + ' ' + targetDate.getFullYear();
                 trajEl.innerHTML = `
-                    <div class="dash-traj-label">🎯 100,000 Subscriber Trajectory</div>
+                    <div class="dash-traj-label">üéØ 100,000 Subscriber Trajectory</div>
                     <div class="dash-traj-date">${dateStr}</div>
-                    <div class="dash-traj-sub">Growing ~${formatNumber(Math.round(subsPerMonth))}/mo · ${formatNumber(subsNeeded)} to go</div>
+                    <div class="dash-traj-sub">Growing ~${formatNumber(Math.round(subsPerMonth))}/mo ¬∑ ${formatNumber(subsNeeded)} to go</div>
                 `;
             }
         }
@@ -2033,7 +2033,7 @@ const VP_CACHE_KEY = 'bigtech_vp_cache';
 const VP_CACHE_TTL = 3600000; // 1 hour in ms
 
 function parseDuration(iso) {
-    // Parse ISO 8601 duration like PT1H25M30S → total minutes
+    // Parse ISO 8601 duration like PT1H25M30S ‚Üí total minutes
     if (!iso) return 0;
     const m = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
     if (!m) return 0;
@@ -2130,7 +2130,7 @@ async function fetchVideoPerformance(maxItems) {
 
     } catch (err) {
         console.error('[VP] Fetch error:', err);
-        container.innerHTML = `<div class="vp-loading" style="color:var(--red);">❌ Failed to load video data: ${err.message}</div>`;
+        container.innerHTML = `<div class="vp-loading" style="color:var(--red);">‚ùå Failed to load video data: ${err.message}</div>`;
         throw err; // Re-throw so callers (like Thumbnail Performance) can catch it
     }
 }
@@ -2151,11 +2151,11 @@ function generateVpInsights(videos) {
     const recentAvg = recent.reduce((s, v) => s + v.views, 0) / recent.length;
     const recentPct = Math.round(((recentAvg - avgViews) / avgViews) * 100);
     if (recentPct > 10) {
-        insights.push(`Your last ${recent.length} videos are trending ${recentPct}% above your channel average — momentum is building.`);
+        insights.push(`Your last ${recent.length} videos are trending ${recentPct}% above your channel average ‚Äî momentum is building.`);
     } else if (recentPct < -10) {
-        insights.push(`Your last ${recent.length} videos are trending ${Math.abs(recentPct)}% below your channel average — recent uploads are underperforming.`);
+        insights.push(`Your last ${recent.length} videos are trending ${Math.abs(recentPct)}% below your channel average ‚Äî recent uploads are underperforming.`);
     } else {
-        insights.push(`Your last ${recent.length} videos are performing right at your channel average — steady and consistent.`);
+        insights.push(`Your last ${recent.length} videos are performing right at your channel average ‚Äî steady and consistent.`);
     }
 
     // Insight 2: Best performing topic/video recently
@@ -2170,8 +2170,8 @@ function generateVpInsights(videos) {
     const medLong = videos.filter(v => v.duration > 50 && v.duration <= 75);
     const extraLong = videos.filter(v => v.duration > 75);
     const buckets = [
-        { label: '35–50 min', vids: shortLong },
-        { label: '50–75 min', vids: medLong },
+        { label: '35‚Äì50 min', vids: shortLong },
+        { label: '50‚Äì75 min', vids: medLong },
         { label: '75+ min', vids: extraLong }
     ].filter(b => b.vids.length >= 2);
 
@@ -2188,7 +2188,7 @@ function generateVpInsights(videos) {
         const aboveThreshold = avgViews * 1.2;
         const greenCount = videos.filter(v => v.views >= aboveThreshold).length;
         const greenPct = Math.round((greenCount / videos.length) * 100);
-        insights.push(`${greenCount} of ${videos.length} longform videos (${greenPct}%) are performing above average — ${greenPct >= 30 ? 'a healthy hit rate' : 'room to improve'}.`);
+        insights.push(`${greenCount} of ${videos.length} longform videos (${greenPct}%) are performing above average ‚Äî ${greenPct >= 30 ? 'a healthy hit rate' : 'room to improve'}.`);
     }
 
     return insights;
@@ -2281,14 +2281,14 @@ function renderVpList(videos, page) {
 
     let html = `
         <div class="vp-header">
-            <h2>📊 Video Performance (${videos.length} videos over 35 min)</h2>
-            <div class="vp-meta">${updatedText} · Refreshes hourly</div>
+            <h2>üìä Video Performance (${videos.length} videos over 35 min)</h2>
+            <div class="vp-meta">${updatedText} ¬∑ Refreshes hourly</div>
         </div>
     `;
 
     if (insights.length > 0) {
         html += `<div class="vp-insights" id="vpInsightsBox">
-            <div class="vp-insights-title">💡 Insights <span id="vpInsightsStatus" style="font-size:11px;color:#8899aa;font-weight:normal;margin-left:8px;">⏳ Generating fresh AI insights...</span></div>
+            <div class="vp-insights-title">üí° Insights <span id="vpInsightsStatus" style="font-size:11px;color:#8899aa;font-weight:normal;margin-left:8px;">‚è≥ Generating fresh AI insights...</span></div>
             <ul id="vpInsightsList">${insights.map(i => `<li>${i}</li>`).join('')}</ul>
         </div>`;
     }
@@ -2313,7 +2313,7 @@ function renderVpList(videos, page) {
                 <img class="vp-thumb" src="${v.thumbnail}" alt="" loading="lazy">
                 <div class="vp-info">
                     <div class="vp-title" title="${esc(v.title)}">${esc(v.title)}</div>
-                    <div class="vp-date">${dateStr} · ${formatDuration(v.duration)}</div>
+                    <div class="vp-date">${dateStr} ¬∑ ${formatDuration(v.duration)}</div>
                 </div>
                 <div class="vp-views ${color}">${formatNumber(v.views)} views</div>
             </div>
@@ -2326,9 +2326,9 @@ function renderVpList(videos, page) {
     if (totalPages > 1) {
         html += `
             <div class="vp-pagination">
-                <button class="vp-page-btn" onclick="vpGoPage(${page - 1})" ${page === 0 ? 'disabled' : ''}>‹</button>
+                <button class="vp-page-btn" onclick="vpGoPage(${page - 1})" ${page === 0 ? 'disabled' : ''}>‚Äπ</button>
                 <span class="vp-page-info">Page ${page + 1} of ${totalPages}</span>
-                <button class="vp-page-btn" onclick="vpGoPage(${page + 1})" ${page >= totalPages - 1 ? 'disabled' : ''}>›</button>
+                <button class="vp-page-btn" onclick="vpGoPage(${page + 1})" ${page >= totalPages - 1 ? 'disabled' : ''}>‚Ä∫</button>
             </div>
         `;
     }
@@ -2342,7 +2342,7 @@ function renderVpList(videos, page) {
             const statusEl = document.getElementById('vpInsightsStatus');
             if (aiInsights && aiInsights.length > 0 && listEl) {
                 listEl.innerHTML = aiInsights.map(i => `<li>${i}</li>`).join('');
-                if (statusEl) statusEl.textContent = '✨ AI-powered';
+                if (statusEl) statusEl.textContent = '‚ú® AI-powered';
             } else {
                 if (statusEl) statusEl.textContent = '';
             }
@@ -2361,18 +2361,18 @@ function renderVideoPerformance() {
     const cache = getVpCache();
     if (cache && cache.videos) {
         renderVpList(cache.videos, vpCurrentPage);
-        // Background refresh — fetch fresh data without blocking the UI
+        // Background refresh ‚Äî fetch fresh data without blocking the UI
         refreshVpInBackground();
         return;
     }
-    // 2. Stale cache — show it, then refresh
+    // 2. Stale cache ‚Äî show it, then refresh
     const staleCache = getVpCache(true);
     if (staleCache && staleCache.videos) {
         renderVpList(staleCache.videos, vpCurrentPage);
         refreshVpInBackground();
         return;
     }
-    // 3. No cache at all — full blocking fetch
+    // 3. No cache at all ‚Äî full blocking fetch
     vpCurrentPage = 0;
     fetchVideoPerformance().catch(() => {});
 }
@@ -2388,7 +2388,7 @@ function refreshVpInBackground() {
 }
 
 // ---- Thumbnail Performance ----
-// Shares data with Video Performance tab — no separate API calls needed.
+// Shares data with Video Performance tab ‚Äî no separate API calls needed.
 // CTR data fetched from YouTube Analytics via Cloudflare Worker.
 
 const TP_CTR_CACHE_KEY = 'bigtech_tp_ctr_cache';
@@ -2445,7 +2445,7 @@ async function fetchAnalyticsData(videoIds, skipCache) {
 }
 
 function renderThumbnailPerformance() {
-    // 1. Try full cached result that has analytics data — instant render
+    // 1. Try full cached result that has analytics data ‚Äî instant render
     const fullCache = getTpFullCache();
     if (fullCache && fullCache.analyticsData && Object.keys(fullCache.analyticsData).length > 0) {
         renderTpGrid(null, fullCache);
@@ -2453,17 +2453,25 @@ function renderThumbnailPerformance() {
         refreshTpInBackground();
         return;
     }
-    // 2. Try stale full cache with analytics — show it, then refresh in background
+    // 2. Try stale full cache with analytics ‚Äî show it, then refresh in background
     const staleFullCache = getTpFullCache(true);
     if (staleFullCache && staleFullCache.analyticsData && Object.keys(staleFullCache.analyticsData).length > 0) {
         renderTpGrid(null, staleFullCache);
-        // Stale data shown — refresh in background
+        // Stale data shown ‚Äî refresh in background
         refreshTpInBackground();
         return;
     }
-    // 3. No cache with analytics — fetch from scratch (show spinner, get the real data)
+    // 3. No cache with analytics ‚Äî fetch from scratch (show spinner, get the real data)
     const container = document.getElementById('tpContainer');
     container.innerHTML = '<div class="vp-loading"><div class="spinner"></div>Fetching thumbnail performance data...</div>';
+    loadTpFromScratch();
+}
+
+function refreshThumbnailPerformanceForced() {
+    localStorage.removeItem(TP_FULL_CACHE_KEY);
+    localStorage.removeItem(TP_CTR_CACHE_KEY);
+    const container = document.getElementById('tpContainer');
+    container.innerHTML = '<div class="vp-loading"><div class="spinner"></div>Refreshing thumbnail performance data...</div>';
     loadTpFromScratch();
 }
 
@@ -2480,7 +2488,7 @@ function loadTpFromScratch() {
     }
 
     if (videos) {
-        // We have video data — go straight to fetching analytics
+        // We have video data ‚Äî go straight to fetching analytics
         fetchTpAnalyticsAndRender(videos);
     } else {
         // Need to fetch videos first
@@ -2491,7 +2499,7 @@ function loadTpFromScratch() {
                 fetchTpAnalyticsAndRender(vpAllVideos.slice(0, 30));
             }
         }).catch(() => {
-            container.innerHTML = '<div class="vp-loading" style="color:var(--red);">❌ YouTube API quota exceeded. Try again later.</div>';
+            container.innerHTML = '<div class="vp-loading" style="color:var(--red);">‚ùå YouTube API quota exceeded. Try again later.</div>';
         });
     }
 }
@@ -2519,7 +2527,7 @@ function fetchTpAnalyticsAndRender(videos) {
                 const bCtr = analyticsData[b.id]?.ctr ?? -1;
                 return bCtr - aCtr;
             });
-            sortLabel = '✨ Ranked by CTR';
+            sortLabel = '‚ú® Ranked by CTR';
         } else {
             sorted = [...videos].sort((a, b) => getViewsPerDay(b) - getViewsPerDay(a));
             sortLabel = 'Ranked by performance';
@@ -2558,7 +2566,7 @@ function refreshTpInBackground() {
             let sorted, sortLabel;
             if (hasCtr) {
                 sorted = [...videos].sort((a, b) => (analyticsData[b.id]?.ctr ?? -1) - (analyticsData[a.id]?.ctr ?? -1));
-                sortLabel = '✨ Ranked by CTR';
+                sortLabel = '‚ú® Ranked by CTR';
             } else {
                 sorted = [...videos].sort((a, b) => getViewsPerDay(b) - getViewsPerDay(a));
                 sortLabel = 'Ranked by performance';
@@ -2600,11 +2608,11 @@ function renderTpGrid(unused, cachedResult) {
         if (hasCtr) {
             const ctrs = videos.map(v => analyticsData[v.id]?.ctr).filter(x => x != null && x > 0);
             rangeText = ctrs.length > 0
-                ? `${(Math.min(...ctrs) * 100).toFixed(1)}% – ${(Math.max(...ctrs) * 100).toFixed(1)}% CTR`
+                ? `${(Math.min(...ctrs) * 100).toFixed(1)}% ‚Äì ${(Math.max(...ctrs) * 100).toFixed(1)}% CTR`
                 : '';
         } else {
             rangeText = videos.length > 0
-                ? `${formatNumber(videos[videos.length - 1].views)} – ${formatNumber(videos[0].views)} views`
+                ? `${formatNumber(videos[videos.length - 1].views)} ‚Äì ${formatNumber(videos[0].views)} views`
                 : '';
         }
 
@@ -2627,7 +2635,7 @@ function renderTpGrid(unused, cachedResult) {
             const ctrText = ctrPct != null ? `${ctrPct}% CTR` : '';
             const impressionsText = aData?.impressions ? `${formatNumber(aData.impressions)} impr.` : '';
             const daysSincePublish = Math.floor((Date.now() - date.getTime()) / (1000 * 60 * 60 * 24));
-            const pendingText = (!aData && daysSincePublish < 3) ? '<span class="tp-card-date" style="color:var(--accent-light);font-style:italic;">⏳ Analytics pending</span>' : '';
+            const pendingText = (!aData && daysSincePublish < 3) ? '<span class="tp-card-date" style="color:var(--accent-light);font-style:italic;">‚è≥ Analytics pending</span>' : '';
 
             html += `
                 <div class="tp-card ${tier}">
@@ -2657,8 +2665,11 @@ function renderTpGrid(unused, cachedResult) {
 
     let html = `
         <div class="tp-header">
-            <h2>🖼️ Thumbnail Performance (Last 30 Videos)</h2>
-            <div class="tp-meta">${updatedText} · ${sortLabel}</div>
+            <div>
+                <h2>üñºÔ∏è Thumbnail Performance (Last 30 Videos)</h2>
+                <div class="tp-meta">${updatedText} ¬∑ ${sortLabel}</div>
+            </div>
+            <button class="btn btn-secondary" onclick="refreshThumbnailPerformanceForced()" style="font-size:12px;">‚Üª Refresh</button>
         </div>
     `;
 
@@ -2714,7 +2725,7 @@ async function fetchSubGrowth(days) {
         renderSgContent(sgData, days);
     } catch (err) {
         console.error('[SG] Error:', err);
-        container.innerHTML = `<div class="vp-loading" style="color:var(--red);">❌ Failed to load subscriber data: ${err.message}</div>`;
+        container.innerHTML = `<div class="vp-loading" style="color:var(--red);">‚ùå Failed to load subscriber data: ${err.message}</div>`;
     }
 }
 
@@ -2722,17 +2733,17 @@ function generateSgInsights(sliced, stats) {
     if (!sliced || sliced.length < 7) return [];
     const insights = [];
 
-    // 1. Growth trajectory — last 7 days vs overall
+    // 1. Growth trajectory ‚Äî last 7 days vs overall
     const last7 = sliced.slice(-7);
     const last7Avg = last7.reduce((s, d) => s + d.net, 0) / 7;
     const overallAvg = stats.avgPerDay;
     const trendPct = Math.round(((last7Avg - overallAvg) / Math.abs(overallAvg || 1)) * 100);
     if (trendPct > 15) {
-        insights.push(`Growth is accelerating — the last 7 days averaged +${last7Avg.toFixed(1)} net subs/day, ${trendPct}% above your ${sliced.length}-day average.`);
+        insights.push(`Growth is accelerating ‚Äî the last 7 days averaged +${last7Avg.toFixed(1)} net subs/day, ${trendPct}% above your ${sliced.length}-day average.`);
     } else if (trendPct < -15) {
-        insights.push(`Growth is slowing — the last 7 days averaged +${last7Avg.toFixed(1)} net subs/day, ${Math.abs(trendPct)}% below your ${sliced.length}-day average.`);
+        insights.push(`Growth is slowing ‚Äî the last 7 days averaged +${last7Avg.toFixed(1)} net subs/day, ${Math.abs(trendPct)}% below your ${sliced.length}-day average.`);
     } else {
-        insights.push(`Growth is steady — the last 7 days averaged +${last7Avg.toFixed(1)} net subs/day, right in line with your ${sliced.length}-day average of +${overallAvg.toFixed(1)}.`);
+        insights.push(`Growth is steady ‚Äî the last 7 days averaged +${last7Avg.toFixed(1)} net subs/day, right in line with your ${sliced.length}-day average of +${overallAvg.toFixed(1)}.`);
     }
 
     // 2. Best and worst day callout
@@ -2748,7 +2759,7 @@ function generateSgInsights(sliced, stats) {
     let churnLabel = 'low';
     if (churnRate > 0.25) churnLabel = 'elevated';
     else if (churnRate > 0.15) churnLabel = 'moderate';
-    insights.push(`Churn rate is ${churnLabel} at ${churnPct}% — for every 100 subscribers gained, ${Math.round(churnRate * 100)} are lost.`);
+    insights.push(`Churn rate is ${churnLabel} at ${churnPct}% ‚Äî for every 100 subscribers gained, ${Math.round(churnRate * 100)} are lost.`);
 
     return insights;
 }
@@ -2821,7 +2832,7 @@ function renderSgContent(data, days) {
 
     let html = `
         <div class="sg-header">
-            <h2>📈 Subscriber Growth</h2>
+            <h2>üìà Subscriber Growth</h2>
             <div style="display:flex; align-items:center; gap:12px;">
                 <div class="sg-meta">${updatedText}</div>
                 <div class="sg-controls">
@@ -2857,7 +2868,7 @@ function renderSgContent(data, days) {
     // Insights box (between stats and chart)
     if (insights.length > 0) {
         html += `<div class="vp-insights" id="sgInsightsBox">
-            <div class="vp-insights-title">💡 Insights <span id="sgInsightsStatus" style="font-size:11px;color:#8899aa;font-weight:normal;margin-left:8px;">⏳ Generating AI insights...</span></div>
+            <div class="vp-insights-title">üí° Insights <span id="sgInsightsStatus" style="font-size:11px;color:#8899aa;font-weight:normal;margin-left:8px;">‚è≥ Generating AI insights...</span></div>
             <ul id="sgInsightsList">${insights.map(i => `<li>${i}</li>`).join('')}</ul>
         </div>`;
     }
@@ -2877,7 +2888,7 @@ function renderSgContent(data, days) {
             const statusEl = document.getElementById('sgInsightsStatus');
             if (aiInsights && aiInsights.length > 0 && listEl) {
                 listEl.innerHTML = aiInsights.map(i => `<li>${i}</li>`).join('');
-                if (statusEl) statusEl.textContent = '✨ AI-powered';
+                if (statusEl) statusEl.textContent = '‚ú® AI-powered';
             } else {
                 if (statusEl) statusEl.textContent = '';
             }
@@ -3121,7 +3132,7 @@ async function fetchPodcastData() {
         renderPodContent(podData, podTimeRange);
     } catch (err) {
         console.error('[Pod] Error:', err);
-        container.innerHTML = `<div class="vp-loading" style="color:var(--red);">❌ Failed to load podcast data: ${err.message}</div>`;
+        container.innerHTML = `<div class="vp-loading" style="color:var(--red);">‚ùå Failed to load podcast data: ${err.message}</div>`;
     }
 }
 
@@ -3173,9 +3184,9 @@ function renderPodContent(allEpisodes, range) {
 
     let html = `
         <div class="pod-header">
-            <h2>🎙️ Podcast Analytics (${episodes.length} episodes)</h2>
+            <h2>üéôÔ∏è Podcast Analytics (${episodes.length} episodes)</h2>
             <div style="display:flex;align-items:center;gap:12px;">
-                <div class="pod-meta">${rangeLabel} · ${formatNumber(totalDownloads)} total listens</div>
+                <div class="pod-meta">${rangeLabel} ¬∑ ${formatNumber(totalDownloads)} total listens</div>
                 <div class="pod-controls">
                     <select id="podRange" onchange="changePodRange(this.value)">
                         <option value="all" ${range==='all'?'selected':''}>All Time</option>
@@ -3316,7 +3327,7 @@ function buildPodTopList(episodes) {
                 <div class="pod-ep-bar-wrap"><div class="pod-ep-bar" style="width:${barPct}%"></div></div>
                 <div class="pod-ep-stats">
                     <div class="pod-ep-total">${formatNumber(ep.total)}</div>
-                    <div class="pod-ep-breakdown">${formatNumber(ep.downloads)} dl · ${formatNumber(ep.streams)} str</div>
+                    <div class="pod-ep-breakdown">${formatNumber(ep.downloads)} dl ¬∑ ${formatNumber(ep.streams)} str</div>
                 </div>
             </div>
         `;
@@ -3324,7 +3335,7 @@ function buildPodTopList(episodes) {
 
     return `
         <div class="pod-top-list">
-            <div class="pod-top-title">🏆 Top 15 Episodes</div>
+            <div class="pod-top-title">üèÜ Top 15 Episodes</div>
             ${items}
         </div>
     `;
@@ -3347,12 +3358,12 @@ function buildPodRecentList(episodes) {
                 <div class="pod-ep-rank" style="background:${ep.total >= avg * 1.2 ? 'var(--green)' : ep.total <= avg * 0.8 ? 'var(--red)' : 'var(--navy)'}">${i + 1}</div>
                 <div class="pod-ep-info">
                     <div class="pod-ep-title" title="${esc(ep.title)}">${esc(ep.title)}</div>
-                    <div class="pod-ep-date">${dateStr} · <span class="${trendClass}">${trendStr}</span></div>
+                    <div class="pod-ep-date">${dateStr} ¬∑ <span class="${trendClass}">${trendStr}</span></div>
                 </div>
                 <div class="pod-ep-bar-wrap"><div class="pod-ep-bar" style="width:${barPct}%"></div></div>
                 <div class="pod-ep-stats">
                     <div class="pod-ep-total">${formatNumber(ep.total)}</div>
-                    <div class="pod-ep-breakdown">${formatNumber(ep.downloads)} dl · ${formatNumber(ep.streams)} str</div>
+                    <div class="pod-ep-breakdown">${formatNumber(ep.downloads)} dl ¬∑ ${formatNumber(ep.streams)} str</div>
                 </div>
             </div>
         `;
@@ -3360,7 +3371,7 @@ function buildPodRecentList(episodes) {
 
     return `
         <div class="pod-top-list">
-            <div class="pod-top-title">📅 Recent Episodes</div>
+            <div class="pod-top-title">üìÖ Recent Episodes</div>
             ${items}
         </div>
     `;
@@ -3464,7 +3475,7 @@ function parseRSSFeed(xml) {
         const desc = item.querySelector('description')?.textContent?.trim() || '';
         const pubDate = item.querySelector('pubDate')?.textContent?.trim() || '';
 
-        // Extract source from title — Techmeme format: "Headline text (Author/Publication)"
+        // Extract source from title ‚Äî Techmeme format: "Headline text (Author/Publication)"
         let source = '';
         let title = rawTitle;
         const titleSourceMatch = rawTitle.match(/\(([^)]+\/([^)]+))\)\s*$/);
@@ -3489,7 +3500,7 @@ function parseRSSFeed(xml) {
             for (const a of allLinks) {
                 const href = a.getAttribute('href') || '';
                 const text = a.textContent.trim();
-                // Skip techmeme links and image links — look for publication name links
+                // Skip techmeme links and image links ‚Äî look for publication name links
                 if (!href.includes('techmeme.com') && text.length > 1 && text.length < 40 && !href.match(/\.(jpg|png|gif)$/i)) {
                     source = text;
                     break;
@@ -3667,22 +3678,22 @@ function renderNewsBriefs(stories) {
 
     let html = `
         <div class="nb-header">
-            <h2>📰 News Briefs</h2>
+            <h2>üì∞ News Briefs</h2>
             <div class="nb-week-nav">
-                <button class="nb-week-btn" onclick="nbChangeWeek(-1)">‹</button>
-                <span class="nb-week-label">${formatNbDate(window.start)} → ${formatNbDate(window.end)}</span>
-                <button class="nb-week-btn" onclick="nbChangeWeek(1)" ${isCurrentWeek ? 'disabled' : ''}>›</button>
+                <button class="nb-week-btn" onclick="nbChangeWeek(-1)">‚Äπ</button>
+                <span class="nb-week-label">${formatNbDate(window.start)} ‚Üí ${formatNbDate(window.end)}</span>
+                <button class="nb-week-btn" onclick="nbChangeWeek(1)" ${isCurrentWeek ? 'disabled' : ''}>‚Ä∫</button>
             </div>
         </div>
         <div class="nb-add-link">
-            <span style="font-size:18px;">🔗</span>
+            <span style="font-size:18px;">üîó</span>
             <input type="text" id="nbLinkInput" placeholder="Paste a link to add it to the briefs..." onkeydown="if(event.key==='Enter')nbAddLink()">
             <button class="btn btn-primary" onclick="nbAddLink()" id="nbAddBtn">+ Add</button>
         </div>
         <div class="nb-actions">
-            <button class="btn btn-primary" onclick="nbRefresh()">🔄 Refresh</button>
-            <button class="btn btn-accent" onclick="nbCopyForNewsletter()" ${stories.length === 0 ? 'disabled' : ''}>📋 Copy for Newsletter</button>
-            <button class="btn btn-email" onclick="nbSendEmail()" ${stories.length === 0 ? 'disabled' : ''}>📧 Send Email Now</button>
+            <button class="btn btn-primary" onclick="nbRefresh()">üîÑ Refresh</button>
+            <button class="btn btn-accent" onclick="nbCopyForNewsletter()" ${stories.length === 0 ? 'disabled' : ''}>üìã Copy for Newsletter</button>
+            <button class="btn btn-email" onclick="nbSendEmail()" ${stories.length === 0 ? 'disabled' : ''}>üìß Send Email Now</button>
             <span class="nb-status" id="nbStatus"></span>
         </div>
     `;
@@ -3694,7 +3705,7 @@ function renderNewsBriefs(stories) {
         stories.forEach((s, i) => {
             const dateStr = s.pubDate ? new Date(s.pubDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : '';
             const addedBadge = s.manual ? '<span class="nb-added-tag">added</span>' : '';
-            const removeBtn = s.manual ? ` <span style="cursor:pointer;color:var(--silver);font-size:12px;margin-left:6px;" onclick="nbRemoveManual(${i})" title="Remove">✕</span>` : '';
+            const removeBtn = s.manual ? ` <span style="cursor:pointer;color:var(--silver);font-size:12px;margin-left:6px;" onclick="nbRemoveManual(${i})" title="Remove">‚úï</span>` : '';
             html += `
                 <div class="nb-item">
                     <div class="nb-rank">${i + 1}</div>
@@ -3816,8 +3827,8 @@ function nbGetStoriesForEmail() {
 
 function nbBuildEmailHtml(stories) {
     const window = getNbWeekWindow(0);
-    let html = `<h2 style="font-family:Inter,sans-serif;color:#1a2332;">📰 News Briefs</h2>`;
-    html += `<p style="font-family:Inter,sans-serif;color:#8899aa;font-size:13px;">${formatNbDate(window.start)} → ${formatNbDate(window.end)}</p>`;
+    let html = `<h2 style="font-family:Inter,sans-serif;color:#1a2332;">üì∞ News Briefs</h2>`;
+    html += `<p style="font-family:Inter,sans-serif;color:#8899aa;font-size:13px;">${formatNbDate(window.start)} ‚Üí ${formatNbDate(window.end)}</p>`;
     html += `<div style="font-family:Inter,sans-serif;">`;
 
     stories.forEach((s, i) => {
@@ -3845,7 +3856,7 @@ async function nbSendEmail() {
     }
 
     const window = getNbWeekWindow(0);
-    const subject = `News Briefs: ${formatNbDate(window.start)} → ${formatNbDate(window.end)}`;
+    const subject = `News Briefs: ${formatNbDate(window.start)} ‚Üí ${formatNbDate(window.end)}`;
     const body = nbBuildEmailHtml(stories);
 
     try {
@@ -3921,7 +3932,7 @@ async function nbAddLink() {
     // Auto-add https:// if missing
     if (!url.match(/^https?:\/\//i)) url = 'https://' + url;
 
-    btn.textContent = '⏳';
+    btn.textContent = '‚è≥';
     btn.disabled = true;
 
     try {
@@ -3938,7 +3949,7 @@ async function nbAddLink() {
         // Rewrite headline in our style via Claude
         let rewrittenTitle = originalTitle;
         try {
-            btn.textContent = '✍️';
+            btn.textContent = '‚úçÔ∏è';
             const rwResp = await fetch(NB_WORKER_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -4112,7 +4123,7 @@ function gatherDataContext() {
         const totalViews = vpAllVideos.reduce((s, v) => s + v.views, 0);
         const avgViews = Math.round(totalViews / vpAllVideos.length);
         const topVideos = vpAllVideos.slice(0, 20).map((v, i) =>
-            `  ${i + 1}. "${v.title}" — ${v.views.toLocaleString()} views, ${Math.round(v.duration)}min, published ${new Date(v.publishedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+            `  ${i + 1}. "${v.title}" ‚Äî ${v.views.toLocaleString()} views, ${Math.round(v.duration)}min, published ${new Date(v.publishedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
         ).join('\n');
         sections.push('VIDEO PERFORMANCE (longform videos):\nTotal: ' + vpAllVideos.length + ' videos | Average views: ' + avgViews.toLocaleString() + ' | Total views: ' + totalViews.toLocaleString() + '\nTop videos:\n' + topVideos);
     }
@@ -4123,7 +4134,7 @@ function gatherDataContext() {
         const entries = (tpCache.sortedVideos || []).slice(0, 20).map(v => {
             const a = tpCache.analyticsData[v.id];
             if (!a) return null;
-            return '  "' + v.title + '" — CTR: ' + (a.ctr ? (a.ctr * 100).toFixed(1) + '%' : 'N/A') + ', impressions: ' + (a.impressions || 0).toLocaleString() + ', retention: ' + (a.avgViewPct ? a.avgViewPct.toFixed(1) + '%' : 'N/A');
+            return '  "' + v.title + '" ‚Äî CTR: ' + (a.ctr ? (a.ctr * 100).toFixed(1) + '%' : 'N/A') + ', impressions: ' + (a.impressions || 0).toLocaleString() + ', retention: ' + (a.avgViewPct ? a.avgViewPct.toFixed(1) + '%' : 'N/A');
         }).filter(Boolean).join('\n');
         if (entries) sections.push('THUMBNAIL & CTR DATA (ranked by CTR):\n' + entries);
     }
@@ -4146,7 +4157,7 @@ function gatherDataContext() {
     if (podEps && podEps.length > 0) {
         const totalDl = podEps.reduce((s, e) => s + (e.total || 0), 0);
         const topEps = podEps.slice(0, 15).map((e, i) =>
-            '  ' + (i + 1) + '. "' + e.title + '" — ' + (e.total || 0).toLocaleString() + ' total plays, published ' + (e.published || 'N/A')
+            '  ' + (i + 1) + '. "' + e.title + '" ‚Äî ' + (e.total || 0).toLocaleString() + ' total plays, published ' + (e.published || 'N/A')
         ).join('\n');
         sections.push('PODCAST ANALYTICS:\nTotal episodes: ' + podEps.length + ' | Total plays: ' + totalDl.toLocaleString() + '\n' + topEps);
     }
@@ -4273,8 +4284,8 @@ let _syncOnLoadDone = false;
     console.log('[SYNC] Cloud:', cloudMonths, 'months,', cloudVideos, 'videos | Local:', localMonths, 'months,', localVideos, 'videos');
 
     if (!cloudData || !cloudData.months || cloudData.months.length === 0) {
-        // Cloud is empty or unreachable — seed it from local
-        console.log('[SYNC] Cloud empty → seeding from local (' + localVideos + ' videos)');
+        // Cloud is empty or unreachable ‚Äî seed it from local
+        console.log('[SYNC] Cloud empty ‚Üí seeding from local (' + localVideos + ' videos)');
         if (localVideos > 0) {
             localData.settings = loadSettings();
             localData.lastModified = Date.now();
@@ -4289,15 +4300,15 @@ let _syncOnLoadDone = false;
     const localScore = localMonths * 100 + localVideos;
 
     if (localScore > cloudScore) {
-        // Local has more data — push to cloud
-        console.log('[SYNC] Local is more complete (' + localMonths + ' months, ' + localVideos + ' vids) → pushing to cloud');
+        // Local has more data ‚Äî push to cloud
+        console.log('[SYNC] Local is more complete (' + localMonths + ' months, ' + localVideos + ' vids) ‚Üí pushing to cloud');
         localData.settings = loadSettings();
         localData.lastModified = Date.now();
         await saveToCloud(localData);
         toast('Local data pushed to cloud', 'success');
     } else if (cloudScore > localScore) {
-        // Cloud has more data — pull from cloud
-        console.log('[SYNC] Cloud is more complete → pulling from cloud');
+        // Cloud has more data ‚Äî pull from cloud
+        console.log('[SYNC] Cloud is more complete ‚Üí pulling from cloud');
         localStorage.setItem(MONTHS_KEY, JSON.stringify(cloudData));
         loadActiveVideos();
         renderMonthBar();
@@ -4306,11 +4317,11 @@ let _syncOnLoadDone = false;
         updateSubtitle();
         toast('Synced from cloud (' + cloudVideos + ' videos)', 'success');
     } else {
-        // Same amount of data — use cloud as tiebreaker but also check lastModified
+        // Same amount of data ‚Äî use cloud as tiebreaker but also check lastModified
         const cloudMod = cloudData.lastModified || 0;
         const localMod = localData.lastModified || 0;
         if (cloudMod > localMod) {
-            console.log('[SYNC] Same data count, cloud is newer → pulling');
+            console.log('[SYNC] Same data count, cloud is newer ‚Üí pulling');
             localStorage.setItem(MONTHS_KEY, JSON.stringify(cloudData));
             loadActiveVideos();
             renderMonthBar();
